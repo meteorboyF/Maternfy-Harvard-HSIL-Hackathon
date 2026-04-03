@@ -49,7 +49,7 @@ Tables:
 [ ] F9: Vitals logging screen
 [ ] F10: Triage chat UI
 [ ] F11: Voice input
-[ ] F12: Pregnancy timeline calendar
+[x] F12: Pregnancy timeline calendar
 [ ] F13: SOS button
 
 ### PHASE 4 — Next.js Clinical Dashboard

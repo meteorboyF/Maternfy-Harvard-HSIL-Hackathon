@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-03T18:20
+## Last Updated: 2026-04-03T19:30
 
 ## Completed Features
 
@@ -20,6 +20,7 @@
 - [x] F9: Vitals logging screen — form + fl_chart BP trend with danger lines (`1605439`)
 - [x] F10: Triage chat UI — bubbles, Bangla/English toggle, typing indicator (`1605439`)
 - [x] F11: Voice input — hold-to-record mic, WAV → Whisper → triage (`b61a032`)
+- [x] F12: Pregnancy timeline calendar — progress ring, baby-size card, month grid with vitals/triage dots, milestone timeline (pending commit)
 - [x] F13: SOS button — GPS + 24h vitals → Firestore + Supabase alerts (`b61a032`)
 
 ### Phase 4 — Next.js Dashboard ✅
@@ -73,7 +74,6 @@ python training/train_all.py --kaggle    # use Kaggle dataset
 ```
 
 ## In Progress
-- F12: Pregnancy timeline calendar (Flutter)
 - F18: Dietary advisor RAG pipeline
 - F19: NLP mood journal
 - F20: Analytics page
