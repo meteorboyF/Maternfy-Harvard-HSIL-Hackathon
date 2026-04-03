@@ -1,0 +1,42 @@
+# Environment files — NEVER commit secrets
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+
+# Node
+node_modules/
+maternify_api/node_modules/
+maternify_dashboard/node_modules/
+maternify_dashboard/.next/
+maternify_dashboard/out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+maternify_ml/.venv/
+maternify_ml/venv/
+maternify_ml/*.egg-info/
+
+# Flutter / Dart
+maternify_app/.dart_tool/
+maternify_app/.flutter-plugins
+maternify_app/.flutter-plugins-dependencies
+maternify_app/build/
+maternify_app/android/local.properties
+maternify_app/android/.gradle/
+maternify_app/ios/Pods/
+maternify_app/ios/Flutter/Flutter.framework
+maternify_app/ios/Flutter/Flutter.podspec
+
+# ML artifacts (large — store with DVC or separately)
+maternify_ml/saved_models/*.pkl
+maternify_ml/saved_models/*.h5
+maternify_ml/training/data/*.csv
+
+# OS
+.DS_Store
+Thumbs.db
+*.lnk
