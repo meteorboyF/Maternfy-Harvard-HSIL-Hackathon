@@ -1,0 +1,3 @@
+-- NOTE: The Node API uses the Supabase SERVICE ROLE key, which bypasses RLS entirely.
+-- All client-side calls (Flutter app, Next.js dashboard with anon key) are subject to RLS.
+-- Never expose the service role key to the client.

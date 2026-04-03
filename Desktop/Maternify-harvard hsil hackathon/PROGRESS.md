@@ -4,17 +4,22 @@
 
 ## Completed Features
 - [x] F1: Project scaffold — Flutter + Next.js + Node API + FastAPI (commit `362dfa3`)
-  - `maternify_app/` — Flutter BLoC skeleton, Auth, models, login/home screens, services
-  - `maternify_dashboard/` — Next.js 14 + Tailwind skeleton, Firebase + Supabase clients, TypeScript types
-  - `maternify_api/` — Express with 4 domain routers, Firebase token middleware, Supabase service client
-  - `maternify_ml/` — FastAPI with XGBoost stub + LSTM stub + Pydantic schemas + model loader
+- [x] F2: Supabase schema — 6 tables + full RLS policies (commit pending)
+  - `patients`, `vitals_logs`, `triage_events`, `epds_scores`, `alerts`, `messages`
+  - RLS: provider owns their patients, patients own their own vitals/triage
+  - Migration file: `maternify_api/src/db/001_schema.sql`
+- [x] F3: Firebase Auth custom claims — `authService.js`, `/api/auth/register-provider` + `/register-patient` (commit pending)
+- [x] F4: Seed script — 5 demo patients, 14 days vitals, 2 preeclampsia-risk trajectories (commit pending)
+  - Risk patients: Shirin Sultana (36w), Mina Parvin (32w) — escalating BP trend toward today
 
 ## In Progress
-- F2: Supabase schema — create all 6 tables with RLS policies + seed migration
+- F5: Claude API triage endpoint — Node.js /api/triage with Bangla NLP
 
 ## Next Up
-- F3: Firebase Auth — Google sign-in, custom claims (patient vs provider role)
-- F4: Seed script — 5 synthetic demo patients with 14 days of vitals history
+- F6: XGBoost risk model training + SHAP
+- F7: LSTM anomaly detector
+- F8: Firestore alert pipeline
 
 ## Known Issues
-- (none)
+- Flutter SDK download in progress (~600MB) — Flutter UI preview pending
+- `@radix-ui/react-badge` removed from dashboard deps (does not exist in registry)
