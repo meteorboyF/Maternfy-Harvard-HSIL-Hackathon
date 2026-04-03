@@ -59,7 +59,7 @@ Tables:
 [ ] F17: EPDS screening flow
 
 ### PHASE 5 — Polish
-[ ] F18: Dietary advisor
+[x] F18: Dietary advisor
 [ ] F19: NLP mood journal
 [ ] F20: Analytics page
 

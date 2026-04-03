@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-03T19:30
+## Last Updated: 2026-04-03T20:15
 
 ## Completed Features
 
@@ -73,8 +73,12 @@ python training/train_all.py --xgb-only  # XGBoost only, ~30s CPU
 python training/train_all.py --kaggle    # use Kaggle dataset
 ```
 
+### Phase 5 — Polish 🔄
+- [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (pending commit)
+
 ## In Progress
-- F18: Dietary advisor RAG pipeline
+- F19: NLP mood journal
+- F20: Analytics page
 - F19: NLP mood journal
 - F20: Analytics page
 

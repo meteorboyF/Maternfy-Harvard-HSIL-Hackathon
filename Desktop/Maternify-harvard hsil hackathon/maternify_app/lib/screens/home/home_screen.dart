@@ -8,6 +8,7 @@ import '../vitals/vitals_screen.dart';
 import '../triage/triage_screen.dart';
 import '../sos/sos_screen.dart';
 import '../calendar/calendar_screen.dart';
+import '../dietary/dietary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -248,6 +249,20 @@ class _HomeTab extends StatelessWidget {
                 label: 'জরুরি SOS',
                 color: const Color(0xFFD32F2F),
                 onTap: () => _navigate(context, 4),
+              ),
+              _QuickAction(
+                icon: Icons.restaurant_menu,
+                label: 'খাদ্য পরামর্শ',
+                color: const Color(0xFF00897B),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DietaryScreen(
+                      patientId: patient.id,
+                      weeksGestation: patient.weeksGestation,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
