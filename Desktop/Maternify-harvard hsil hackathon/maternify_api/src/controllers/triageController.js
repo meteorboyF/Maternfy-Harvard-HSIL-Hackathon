@@ -1,10 +1,27 @@
-// Triage controller — full Claude API integration built in F5
+const Joi = require('joi')
+const { runTriage } = require('../services/triageService')
 const supabase = require('../config/supabase')
+
+const triageSchema = Joi.object({
+  patient_id: Joi.string().uuid().required(),
+  input_text: Joi.string().min(3).max(2000).required(),
+  input_lang: Joi.string().valid('bn', 'en').default('bn'),
+  ml_risk_tier: Joi.string().valid('green', 'yellow', 'red').default('green'),
+})
 
 exports.createTriageEvent = async (req, res, next) => {
   try {
-    // F5 will implement: fetch vitals → build prompt → call Claude API → persist + alert pipeline
-    res.status(501).json({ message: 'Triage endpoint — implemented in F5' })
+    const { error, value } = triageSchema.validate(req.body)
+    if (error) return res.status(400).json({ error: error.details[0].message })
+
+    const triageEvent = await runTriage(
+      value.patient_id,
+      value.input_text,
+      value.input_lang,
+      value.ml_risk_tier
+    )
+
+    res.status(201).json(triageEvent)
   } catch (err) {
     next(err)
   }
