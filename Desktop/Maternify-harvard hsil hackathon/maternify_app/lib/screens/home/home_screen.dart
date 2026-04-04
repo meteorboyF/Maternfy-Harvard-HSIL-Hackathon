@@ -98,7 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     final patient = _patient!;
     return switch (_selectedIndex) {
-      0 => _HomeTab(patient: patient),
+      0 => _HomeTab(
+          patient: patient,
+          onNavigate: (i) => setState(() => _selectedIndex = i),
+        ),
       1 => VitalsScreen(patientId: patient.id),
       2 => TriageScreen(patientId: patient.id),
       3 => CalendarScreen(
@@ -115,7 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _HomeTab extends StatelessWidget {
   final Patient patient;
-  const _HomeTab({required this.patient});
+  final ValueChanged<int> onNavigate;
+  const _HomeTab({required this.patient, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -230,25 +234,25 @@ class _HomeTab extends StatelessWidget {
                 icon: Icons.monitor_heart,
                 label: 'ভাইটালস লগ করুন',
                 color: const Color(0xFF1976D2),
-                onTap: () => _navigate(context, 1),
+                onTap: () => onNavigate(1),
               ),
               _QuickAction(
                 icon: Icons.chat,
                 label: 'ট্রায়াজ চ্যাট',
                 color: const Color(0xFF388E3C),
-                onTap: () => _navigate(context, 2),
+                onTap: () => onNavigate(2),
               ),
               _QuickAction(
                 icon: Icons.calendar_month,
                 label: 'ক্যালেন্ডার দেখুন',
                 color: const Color(0xFF7B1FA2),
-                onTap: () => _navigate(context, 3),
+                onTap: () => onNavigate(3),
               ),
               _QuickAction(
                 icon: Icons.sos,
                 label: 'জরুরি SOS',
                 color: const Color(0xFFD32F2F),
-                onTap: () => _navigate(context, 4),
+                onTap: () => onNavigate(4),
               ),
               _QuickAction(
                 icon: Icons.restaurant_menu,
@@ -295,10 +299,6 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  void _navigate(BuildContext context, int index) {
-    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-    homeState?.setState(() => homeState._selectedIndex = index);
-  }
 }
 
 class _StatChip extends StatelessWidget {

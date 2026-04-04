@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/firebase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/patient.dart';
