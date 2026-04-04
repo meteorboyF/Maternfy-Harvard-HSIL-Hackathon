@@ -9,6 +9,7 @@ import '../triage/triage_screen.dart';
 import '../sos/sos_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../dietary/dietary_screen.dart';
+import '../journal/journal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -265,6 +266,18 @@ class _HomeTab extends StatelessWidget {
                       patientId: patient.id,
                       weeksGestation: patient.weeksGestation,
                     ),
+                  ),
+                ),
+              ),
+              _QuickAction(
+                icon: Icons.menu_book,
+                label: 'মেজাজ জার্নাল',
+                color: const Color(0xFF6A1B9A),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        JournalScreen(patientId: patient.id),
                   ),
                 ),
               ),

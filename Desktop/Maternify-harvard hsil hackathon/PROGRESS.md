@@ -74,10 +74,10 @@ python training/train_all.py --kaggle    # use Kaggle dataset
 ```
 
 ### Phase 5 — Polish 🔄
-- [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (pending commit)
+- [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (180c05f)
+- [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (pending commit)
 
 ## In Progress
-- F19: NLP mood journal
 - F20: Analytics page
 - F19: NLP mood journal
 - F20: Analytics page

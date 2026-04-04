@@ -11,6 +11,7 @@ const alertsRouter = require('./routes/alerts')
 const vitalsRouter = require('./routes/vitals')
 const authRouter = require('./routes/auth')
 const dietaryRouter = require('./routes/dietary')
+const journalRouter = require('./routes/journal')
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -32,6 +33,7 @@ app.use('/api/patients', patientsRouter)
 app.use('/api/alerts', alertsRouter)
 app.use('/api/vitals', vitalsRouter)
 app.use('/api/dietary', dietaryRouter)
+app.use('/api/journal', journalRouter)
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'maternify-api' }))

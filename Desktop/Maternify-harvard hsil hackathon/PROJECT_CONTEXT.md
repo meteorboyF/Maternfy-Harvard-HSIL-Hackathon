@@ -60,7 +60,7 @@ Tables:
 
 ### PHASE 5 — Polish
 [x] F18: Dietary advisor
-[ ] F19: NLP mood journal
+[x] F19: NLP mood journal
 [ ] F20: Analytics page
 
 ## Claude API System Prompt Template
