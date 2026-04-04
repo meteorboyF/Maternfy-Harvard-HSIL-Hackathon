@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-04T22:00
+## Last Updated: 2026-04-04T23:00
 
 ## Completed Features
 
@@ -32,6 +32,7 @@
 ### Phase 5 — Polish ✅
 - [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (`180c05f`)
 - [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (`ce68a04`)
+- [x] F20: Analytics page — Next.js dashboard: KPI strip, triage tier donut, population vitals trend, EPDS histogram, alert volume bar chart, top-5 risk table (Recharts + Supabase server queries)
 
 ### Infrastructure & Fixes ✅
 - [x] Firebase packages upgraded to v3/v5 (Dart 3.7 web compat) (`e8d07d2`)
@@ -95,7 +96,7 @@ python training/train_all.py --kaggle    # use Kaggle dataset
 ---
 
 ## In Progress
-- F20: Analytics page (Next.js dashboard)
+- All features complete ✅ — Maternify v1.0 ready for demo
 
 ## Known Issues
 - Supabase URL + anon key still needed as `--dart-define` flags (see run command above)
