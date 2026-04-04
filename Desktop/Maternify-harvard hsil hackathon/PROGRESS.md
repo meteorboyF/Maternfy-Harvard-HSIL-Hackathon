@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-03T20:15
+## Last Updated: 2026-04-04T22:00
 
 ## Completed Features
 
@@ -20,7 +20,7 @@
 - [x] F9: Vitals logging screen — form + fl_chart BP trend with danger lines (`1605439`)
 - [x] F10: Triage chat UI — bubbles, Bangla/English toggle, typing indicator (`1605439`)
 - [x] F11: Voice input — hold-to-record mic, WAV → Whisper → triage (`b61a032`)
-- [x] F12: Pregnancy timeline calendar — progress ring, baby-size card, month grid with vitals/triage dots, milestone timeline (pending commit)
+- [x] F12: Pregnancy timeline calendar — progress ring, baby-size card, month grid with vitals/triage dots, milestone timeline (`5fe9adb`)
 - [x] F13: SOS button — GPS + 24h vitals → Firestore + Supabase alerts (`b61a032`)
 
 ### Phase 4 — Next.js Dashboard ✅
@@ -29,23 +29,29 @@
 - [x] F16: Real-time alert bell — onSnapshot badge in sidebar, wired to alert feed (pending commit)
 - [x] F17: EPDS screening — 10-question flow, auto-score, auto-alert if ≥12, Supabase persist (pending commit)
 
-### Training Infrastructure ✅
-- [x] `train_all.py` — unified, auto-detects GPU (GTX 1060 → RTX 5060 Ti)
-- [x] `TRAINING_GUIDE.md` — Kaggle datasets, PyCharm setup, model sharing
+### Phase 5 — Polish ✅
+- [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (`180c05f`)
+- [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (`ce68a04`)
 
-### Flutter SDK ✅
-- [x] Flutter 3.29.2 at `C:/Users/ASUS/flutter/bin` — added to Windows PATH
-- [x] Web support enabled, `flutter pub get` done (211 packages)
+### Infrastructure & Fixes ✅
+- [x] Firebase packages upgraded to v3/v5 (Dart 3.7 web compat) (`e8d07d2`)
+- [x] `firebase_options.dart` — real credentials for web + android (`e8d07d2`)
+- [x] `device_preview` added — phone-frame live preview in Chrome (`b17fb9f`)
+- [x] Flutter SDK 3.29.2 at `C:/Users/ASUS/flutter/bin` — in Windows PATH
+- [x] ML training infrastructure — `train_all.py`, `TRAINING_GUIDE.md`
+
+---
 
 ## How to Run
 
-### Flutter App (Chrome — side-by-side with code)
+### Flutter App (Chrome)
 ```bash
-# Open NEW terminal (PATH refresh needed)
 cd "Desktop/Maternify-harvard hsil hackathon/maternify_app"
-flutter run -d chrome
+C:/Users/ASUS/flutter/bin/flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://YOUR.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY \
+  --dart-define=API_BASE_URL=http://localhost:3000/api
 ```
-VS Code: Ctrl+Shift+P → Flutter: Select Device → Chrome → F5
 
 ### Node API
 ```bash
@@ -73,16 +79,26 @@ python training/train_all.py --xgb-only  # XGBoost only, ~30s CPU
 python training/train_all.py --kaggle    # use Kaggle dataset
 ```
 
-### Phase 5 — Polish 🔄
-- [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (180c05f)
-- [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (pending commit)
+---
+
+## Firebase Setup (DONE ✅)
+- **Project:** `maternify-91c75`
+- **Project number:** `1045513431035`
+- **Web app ID:** `1:1045513431035:web:d2b900b98ab8d027808d5e`
+- **Android app ID:** `1:1045513431035:android:4d0cddf3675d8e49808d5e`
+- **Auth:** Google Sign-In enabled, support email: fardinjahangir9@gmail.com
+- **Config files:**
+  - `maternify_app/lib/firebase_options.dart` — web + android options filled in
+  - `maternify_app/android/app/google-services.json` — real credentials
+- **Remaining for Android Google Sign-In:** add debug SHA-1 fingerprint in Firebase Console → Project Settings → Your apps → Maternify Android
+
+---
 
 ## In Progress
-- F20: Analytics page
-- F19: NLP mood journal
-- F20: Analytics page
+- F20: Analytics page (Next.js dashboard)
 
 ## Known Issues
-- Flutter requires real Firebase `google-services.json` before it can connect
-- Supabase/Firebase env keys needed for dashboard and API
-- `saved_models/` not committed — see TRAINING_GUIDE.md
+- Supabase URL + anon key still needed as `--dart-define` flags (see run command above)
+- `saved_models/` not committed — see `maternify_ml/TRAINING_GUIDE.md`
+- Android Google Sign-In requires SHA-1 fingerprint (Chrome works without it)
+- Node API `.env` needs `ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, Firebase service account keys

@@ -33,32 +33,32 @@ Tables:
 
 ## Feature Build Order
 
-### PHASE 1 — Foundation
+### PHASE 1 — Foundation ✅
 [x] F1: Project scaffold — Flutter app + Next.js dashboard + Node API + FastAPI service
-[ ] F2: Supabase schema — create all tables with RLS policies
-[ ] F3: Firebase Auth — Google sign-in, custom claims (patient vs provider role)
-[ ] F4: Seed script — 5 synthetic demo patients with 14 days of vitals history
+[x] F2: Supabase schema — create all tables with RLS policies
+[x] F3: Firebase Auth — Google sign-in, custom claims (patient vs provider role)
+[x] F4: Seed script — 5 synthetic demo patients with 14 days of vitals history
 
-### PHASE 2 — AI/ML Core
-[ ] F5: Claude API triage endpoint
-[ ] F6: XGBoost risk model
-[ ] F7: LSTM anomaly detector
-[ ] F8: Firestore alert pipeline
+### PHASE 2 — AI/ML Core ✅
+[x] F5: Claude API triage endpoint
+[x] F6: XGBoost risk model
+[x] F7: LSTM anomaly detector
+[x] F8: Firestore alert pipeline
 
-### PHASE 3 — Flutter Mobile App
-[ ] F9: Vitals logging screen
-[ ] F10: Triage chat UI
-[ ] F11: Voice input
+### PHASE 3 — Flutter Mobile App ✅
+[x] F9: Vitals logging screen
+[x] F10: Triage chat UI
+[x] F11: Voice input
 [x] F12: Pregnancy timeline calendar
-[ ] F13: SOS button
+[x] F13: SOS button
 
-### PHASE 4 — Next.js Clinical Dashboard
-[ ] F14: Traffic-light patient panel
-[ ] F15: Patient detail page
-[ ] F16: Real-time alert feed
-[ ] F17: EPDS screening flow
+### PHASE 4 — Next.js Clinical Dashboard ✅
+[x] F14: Traffic-light patient panel
+[x] F15: Patient detail page
+[x] F16: Real-time alert feed
+[x] F17: EPDS screening flow
 
-### PHASE 5 — Polish
+### PHASE 5 — Polish 🔄
 [x] F18: Dietary advisor
 [x] F19: NLP mood journal
 [ ] F20: Analytics page
@@ -92,6 +92,23 @@ feat(F1): project scaffold — Flutter + Next.js + Node + FastAPI
 feat(F5): Claude API triage endpoint with Bangla NLP
 fix(F6): correct SHAP value extraction for XGBoost
 chore: update PROGRESS.md
+
+## Live Firebase Project
+- **Project ID:** `maternify-91c75`
+- **Project number:** `1045513431035`
+- **Auth domain:** `maternify-91c75.firebaseapp.com`
+- **Storage bucket:** `maternify-91c75.firebasestorage.app`
+- **Web app ID:** `1:1045513431035:web:d2b900b98ab8d027808d5e`
+- **Android app ID:** `1:1045513431035:android:4d0cddf3675d8e49808d5e`
+- **Google Sign-In:** enabled (support: fardinjahangir9@gmail.com)
+- **Config files:** `firebase_options.dart` (real values) + `android/app/google-services.json`
+
+## Flutter Package Versions (pinned)
+- `firebase_core: ^3.6.0` — upgraded from 2.x for Dart 3.7 web compat
+- `firebase_auth: ^5.3.1` — upgraded from 4.x
+- `cloud_firestore: ^5.4.4` — upgraded from 4.x
+- `firebase_messaging: ^15.1.3` — upgraded from 14.x
+- `device_preview: ^1.1.0` — dev dependency for Chrome phone-frame preview
 
 ## Working Rules
 1. Do ONE feature at a time. Do not start F2 until F1 is committed.
