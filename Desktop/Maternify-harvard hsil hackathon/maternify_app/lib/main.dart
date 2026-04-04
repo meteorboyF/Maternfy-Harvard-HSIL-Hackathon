@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:device_preview/device_preview.dart';
 
 import 'firebase_options.dart';
 import 'services/supabase_service.dart';
@@ -17,7 +19,12 @@ Future<void> main() async {
   );
   await SupabaseService.initialize();
 
-  runApp(const MaternifyApp());
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => const MaternifyApp(),
+    ),
+  );
 }
 
 class MaternifyApp extends StatelessWidget {
@@ -32,6 +39,10 @@ class MaternifyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Maternify',
         debugShowCheckedModeBanner: false,
+        // device_preview requires these two lines
+        useInheritedMediaQuery: true,
+        locale: DevicePreview.locale(context),
+        builder: DevicePreview.appBuilder,
         theme: _buildTheme(),
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
@@ -56,10 +67,10 @@ class MaternifyApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFE91E8C), // Maternify pink
+        seedColor: const Color(0xFFE91E8C),
         brightness: Brightness.light,
       ),
-      fontFamily: 'Hind Siliguri', // Bangla-compatible font
+      fontFamily: 'Hind Siliguri',
     );
   }
 }
