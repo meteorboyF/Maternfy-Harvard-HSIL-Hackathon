@@ -74,7 +74,7 @@ class _VitalsViewState extends State<_VitalsView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ভাইটালস লগ'),
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF993556),
         foregroundColor: Colors.white,
       ),
       body: BlocBuilder<VitalsBloc, VitalsState>(
@@ -119,7 +119,7 @@ class _VitalsViewState extends State<_VitalsView> {
                         child: ElevatedButton(
                           onPressed: _submitting ? null : () => _submit(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E8C),
+                            backgroundColor: const Color(0xFF993556),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -187,7 +187,7 @@ class _VitalsField extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE91E8C), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF993556), width: 2),
         ),
       ),
       validator: (v) {
@@ -225,7 +225,7 @@ class _BpChart extends StatelessWidget {
             LineChartBarData(
               spots: systolicSpots,
               isCurved: true,
-              color: const Color(0xFFE91E8C),
+              color: const Color(0xFF993556),
               barWidth: 2.5,
               dotData: const FlDotData(show: false),
             ),

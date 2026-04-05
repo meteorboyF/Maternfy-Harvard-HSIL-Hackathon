@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../models/patient.dart';
@@ -62,9 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maternify'),
-        backgroundColor: const Color(0xFFE91E8C),
-        foregroundColor: Colors.white,
+        title: Text('Maternify', style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: 22)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -80,17 +79,20 @@ class _HomeScreenState extends State<HomeScreen> {
               : _patient == null
                   ? const _NoProfileView()
                   : _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => setState(() => _selectedIndex = 4),
+        tooltip: 'জরুরি SOS',
+        child: const Icon(Icons.sos, size: 28),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'হোম'),
-          NavigationDestination(
-              icon: Icon(Icons.monitor_heart), label: 'ভাইটালস'),
-          NavigationDestination(icon: Icon(Icons.chat), label: 'ট্রায়াজ'),
-          NavigationDestination(
-              icon: Icon(Icons.calendar_month), label: 'ক্যালেন্ডার'),
-          NavigationDestination(icon: Icon(Icons.sos), label: 'SOS'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'হোম'),
+          NavigationDestination(icon: Icon(Icons.monitor_heart_outlined), selectedIcon: Icon(Icons.monitor_heart), label: 'ভাইটালস'),
+          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'ট্রায়াজ'),
+          NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'ক্যালেন্ডার'),
+          NavigationDestination(icon: Icon(Icons.emergency_outlined), selectedIcon: Icon(Icons.emergency), label: 'SOS'),
         ],
       ),
     );
@@ -134,53 +136,64 @@ class _HomeTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Greeting card
-          Card(
-            elevation: 3,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE91E8C), Color(0xFFFF6B9D)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF993556), Color(0xFFBF4070)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFF993556).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
+              ],
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'আস-সালামু আলাইকুম, ${patient.name.split(' ').first} 🌸',
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    // Risk tier badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFBA7517),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '⚠ YELLOW',
+                        style: GoogleFonts.nunito(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'স্বাগতম, ${patient.name}!',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('EEEE, d MMMM yyyy', 'en').format(today),
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _StatChip(
-                          label: 'গর্ভাবস্থা',
-                          value: '${patient.weeksGestation} সপ্তাহ'),
-                      const SizedBox(width: 10),
-                      _StatChip(
-                          label: 'বাকি',
-                          value: '$weeksLeft সপ্তাহ'),
-                      const SizedBox(width: 10),
-                      _StatChip(
-                          label: 'রক্তের গ্রুপ',
-                          value: patient.bloodType),
-                    ],
-                  ),
-                ],
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('EEEE, d MMMM yyyy', 'en').format(today),
+                  style: GoogleFonts.nunito(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _StatChip(label: 'গর্ভাবস্থা', value: '${patient.weeksGestation} সপ্তাহ'),
+                    const SizedBox(width: 8),
+                    _StatChip(label: 'বাকি', value: '$weeksLeft সপ্তাহ'),
+                    const SizedBox(width: 8),
+                    _StatChip(label: 'রক্তের গ্রুপ', value: patient.bloodType),
+                  ],
+                ),
+              ],
             ),
           ),
 
@@ -208,7 +221,7 @@ class _HomeTab extends StatelessWidget {
                 child: Text(
                   'আর ${dueDate.difference(today).inDays} দিন',
                   style: const TextStyle(
-                      color: Color(0xFFE91E8C),
+                      color: Color(0xFF993556),
                       fontWeight: FontWeight.bold,
                       fontSize: 12),
                 ),
@@ -219,46 +232,39 @@ class _HomeTab extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Quick-action grid
-          const Text('দ্রুত কার্যক্রম',
-              style:
-                  TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Text('দ্রুত কার্যক্রম',
+              style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87)),
+          const SizedBox(height: 10),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 2.4,
+            childAspectRatio: 2.5,
             children: [
               _QuickAction(
                 icon: Icons.monitor_heart,
-                label: 'ভাইটালস লগ করুন',
-                color: const Color(0xFF1976D2),
+                label: 'ভাইটালস লগ',
+                color: const Color(0xFF993556),
                 onTap: () => onNavigate(1),
               ),
               _QuickAction(
-                icon: Icons.chat,
-                label: 'ট্রায়াজ চ্যাট',
-                color: const Color(0xFF388E3C),
+                icon: Icons.chat_bubble,
+                label: 'AI ট্রায়াজ',
+                color: const Color(0xFF0F6E56),
                 onTap: () => onNavigate(2),
               ),
               _QuickAction(
                 icon: Icons.calendar_month,
-                label: 'ক্যালেন্ডার দেখুন',
-                color: const Color(0xFF7B1FA2),
+                label: 'প্রেগন্যান্সি টাইমলাইন',
+                color: const Color(0xFF534AB7),
                 onTap: () => onNavigate(3),
-              ),
-              _QuickAction(
-                icon: Icons.sos,
-                label: 'জরুরি SOS',
-                color: const Color(0xFFD32F2F),
-                onTap: () => onNavigate(4),
               ),
               _QuickAction(
                 icon: Icons.restaurant_menu,
                 label: 'খাদ্য পরামর্শ',
-                color: const Color(0xFF00897B),
+                color: const Color(0xFF0F6E56),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -272,14 +278,19 @@ class _HomeTab extends StatelessWidget {
               _QuickAction(
                 icon: Icons.menu_book,
                 label: 'মেজাজ জার্নাল',
-                color: const Color(0xFF6A1B9A),
+                color: const Color(0xFF534AB7),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        JournalScreen(patientId: patient.id),
+                    builder: (_) => JournalScreen(patientId: patient.id),
                   ),
                 ),
+              ),
+              _QuickAction(
+                icon: Icons.emergency,
+                label: 'জরুরি SOS',
+                color: const Color(0xFFE24B4A),
+                onTap: () => onNavigate(4),
               ),
             ],
           ),
@@ -373,10 +384,10 @@ class _QuickAction extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(label,
-                  style: TextStyle(
+                  style: GoogleFonts.nunito(
                       color: color,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600)),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
             ),
           ],
         ),

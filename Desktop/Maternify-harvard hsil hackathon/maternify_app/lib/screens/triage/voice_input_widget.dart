@@ -113,7 +113,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
       return const SizedBox(
         width: 48,
         height: 48,
-        child: CircularProgressIndicator(color: Color(0xFFE91E8C), strokeWidth: 3),
+        child: CircularProgressIndicator(color: Color(0xFF993556), strokeWidth: 3),
       );
     }
 
@@ -130,7 +130,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: _recording ? Colors.red : const Color(0xFFE91E8C),
+            color: _recording ? Colors.red : const Color(0xFF993556),
             shape: BoxShape.circle,
           ),
           child: Icon(

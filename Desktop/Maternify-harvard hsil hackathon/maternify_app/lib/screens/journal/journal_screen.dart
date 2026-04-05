@@ -76,7 +76,7 @@ class _JournalViewState extends State<_JournalView>
     return Scaffold(
       appBar: AppBar(
         title: const Text('মেজাজ জার্নাল'),
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF993556),
         foregroundColor: Colors.white,
         leading: const BackButton(),
         bottom: TabBar(
@@ -183,7 +183,7 @@ class _WriteTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF8F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE91E8C).withValues(alpha: 0.3)),
+              border: Border.all(color: const Color(0xFF993556).withValues(alpha: 0.3)),
             ),
             padding: const EdgeInsets.all(14),
             child: TextField(
@@ -222,7 +222,7 @@ class _WriteTab extends StatelessWidget {
           FilledButton.icon(
             onPressed: isSubmitting ? null : onSubmit,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE91E8C),
+              backgroundColor: const Color(0xFF993556),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -315,7 +315,7 @@ class _ResponseCard extends StatelessWidget {
             // AI supportive response
             const Row(
               children: [
-                Icon(Icons.favorite, color: Color(0xFFE91E8C), size: 16),
+                Icon(Icons.favorite, color: Color(0xFF993556), size: 16),
                 SizedBox(width: 6),
                 Text('Maternify বলছে',
                     style: TextStyle(

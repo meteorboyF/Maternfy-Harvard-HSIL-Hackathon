@@ -1,0 +1,138 @@
+{
+  "_comment": "Keyword-based mock triage responses for Maternify demo. Used when ANTHROPIC_API_KEY is not set.",
+  "rules": [
+    {
+      "id": "blurred_vision",
+      "keywords": ["চোখে ঝাপসা", "ঝাপসা", "blurry", "vision", "চোখ", "দেখছি না"],
+      "triage_tier": "red",
+      "advice_bangla": "চোখে ঝাপসা দেখা প্রি-এক্লাম্পসিয়ার বিপদজনক লক্ষণ। এখনই হাসপাতালে যান। বাম পাশে শুয়ে থাকুন। পরিবারকে সাথে নিন।",
+      "advice_english": "Visual disturbances are a danger sign of severe preeclampsia. Go to hospital IMMEDIATELY. Lie on your left side. Do not delay.",
+      "escalation_required": true,
+      "suggested_action": "Emergency hospital visit. Left-lateral positioning."
+    },
+    {
+      "id": "seizure",
+      "keywords": ["খিঁচুনি", "convulsion", "seizure", "কাঁপছে"],
+      "triage_tier": "red",
+      "advice_bangla": "এটি গুরুতর জরুরি অবস্থা। এখনই অ্যাম্বুলেন্স ডাকুন বা হাসপাতালে যান। বাম পাশে শুয়ে থাকুন।",
+      "advice_english": "Seizure in pregnancy is a medical emergency. Call ambulance immediately. Lie on left side. Do not leave alone.",
+      "escalation_required": true,
+      "suggested_action": "Call 999 / go to emergency now."
+    },
+    {
+      "id": "severe_headache_visual",
+      "keywords": ["মাথা অনেক ব্যথা", "চোখে", "ঝাপসা", "severe headache"],
+      "triage_tier": "red",
+      "advice_bangla": "তীব্র মাথাব্যথা ও চোখে সমস্যা প্রি-এক্লাম্পসিয়ার লক্ষণ। এখনই হাসপাতালে যান।",
+      "advice_english": "Severe headache with visual symptoms indicate severe preeclampsia. Go to hospital now.",
+      "escalation_required": true,
+      "suggested_action": "Emergency hospital visit."
+    },
+    {
+      "id": "very_high_bp",
+      "keywords": ["BP অনেক বেশি", "চাপ অনেক বেশি", "pressure high", "রক্তচাপ বেশি"],
+      "triage_tier": "red",
+      "advice_bangla": "রক্তচাপ অনেক বেশি — এটি জরুরি অবস্থা। হাসপাতালে যান এখনই।",
+      "advice_english": "Very high blood pressure requires emergency care. Go to hospital now.",
+      "escalation_required": true,
+      "suggested_action": "Emergency hospital visit."
+    },
+    {
+      "id": "no_movement",
+      "keywords": ["বাচ্চা নড়ছে না", "kick নেই", "no movement", "নড়াচড়া নেই"],
+      "triage_tier": "red",
+      "advice_bangla": "বাচ্চার নড়াচড়া না থাকা জরুরি লক্ষণ। এখনই হাসপাতালে যান।",
+      "advice_english": "Absent fetal movement requires immediate evaluation. Go to hospital now.",
+      "escalation_required": true,
+      "suggested_action": "Emergency hospital visit for NST/CTG."
+    },
+    {
+      "id": "bleeding",
+      "keywords": ["রক্ত", "bleeding", "blood", "ব্লিডিং"],
+      "triage_tier": "red",
+      "advice_bangla": "গর্ভাবস্থায় রক্তপাত জরুরি অবস্থা। এখনই হাসপাতালে যান।",
+      "advice_english": "Vaginal bleeding in pregnancy requires emergency evaluation. Go to hospital immediately.",
+      "escalation_required": true,
+      "suggested_action": "Emergency hospital visit."
+    },
+    {
+      "id": "headache_swelling",
+      "keywords": ["মাথাব্যথা", "মাথা ব্যথা", "পা ফুলে", "ফোলা", "headache", "swelling", "edema"],
+      "triage_tier": "yellow",
+      "advice_bangla": "মাথাব্যথা ও পা ফোলা রক্তচাপ বাড়ার লক্ষণ হতে পারে। লবণ কম খান, পায়ের নিচে বালিশ দিন। আজই ডাক্তারের সাথে কথা বলুন।",
+      "advice_english": "Headache with swelling may indicate rising blood pressure. Reduce salt, elevate legs. Contact your provider today.",
+      "escalation_required": true,
+      "suggested_action": "Contact clinic today. Monitor BP."
+    },
+    {
+      "id": "dizziness",
+      "keywords": ["মাথা ঘুরছে", "মাথা ঘোরা", "dizziness", "dizzy", "ভার্টিগো"],
+      "triage_tier": "yellow",
+      "advice_bangla": "মাথা ঘোরা উদ্বেগজনক হতে পারে। শুয়ে পড়ুন, পানি পান করুন। যদি না কমে তাহলে ডাক্তারকে ফোন করুন।",
+      "advice_english": "Dizziness may indicate low BP, dehydration, or anaemia. Lie down, drink water. Call doctor if it persists.",
+      "escalation_required": true,
+      "suggested_action": "Rest, hydrate. Contact provider if persistent."
+    },
+    {
+      "id": "reduced_kicks",
+      "keywords": ["কম নড়ছে", "কিক কম", "fewer kicks", "less movement"],
+      "triage_tier": "yellow",
+      "advice_bangla": "বাচ্চার নড়াচড়া কম মনে হচ্ছে। ঠান্ডা পানি পান করে শুয়ে পড়ুন এবং ১ ঘণ্টা গণনা করুন। যদি ১০টির কম নড়াচড়া হয় তাহলে ডাক্তারকে জানান।",
+      "advice_english": "Reduced fetal movement noted. Drink cold water, lie on left side and count kicks for 1 hour. Call doctor if fewer than 10 kicks.",
+      "escalation_required": true,
+      "suggested_action": "Kick count monitoring. Contact provider if <10 kicks/hour."
+    },
+    {
+      "id": "nausea_vomiting",
+      "keywords": ["বমি", "বমি বমি", "বমি করছি", "nausea", "vomiting", "উল্টা"],
+      "triage_tier": "yellow",
+      "advice_bangla": "বমি বেশি হলে পানিশূন্যতা হতে পারে। অল্প অল্প করে পানি বা স্যালাইন পান করুন। ২৪ ঘণ্টার বেশি হলে ডাক্তারকে জানান।",
+      "advice_english": "Persistent vomiting can cause dehydration. Sip ORS or water frequently. Contact provider if lasting >24 hours.",
+      "escalation_required": false,
+      "suggested_action": "Oral rehydration. Contact provider if vomiting persists."
+    },
+    {
+      "id": "mild_headache",
+      "keywords": ["মাথা ব্যথা", "headache", "মাথাব্যথা"],
+      "triage_tier": "green",
+      "advice_bangla": "হালকা মাথাব্যথা সাধারণ হতে পারে। পর্যাপ্ত পানি পান করুন, অন্ধকার ঘরে বিশ্রাম নিন। ব্যথা বাড়লে বা চোখে সমস্যা হলে ডাক্তারকে জানান।",
+      "advice_english": "Mild headache is common in pregnancy. Drink water and rest in a dark room. Alert your doctor if it worsens or visual symptoms appear.",
+      "escalation_required": false,
+      "suggested_action": "Rest, hydrate. Monitor for worsening."
+    },
+    {
+      "id": "back_pain",
+      "keywords": ["পিঠে ব্যথা", "কোমর ব্যথা", "back pain", "backache"],
+      "triage_tier": "green",
+      "advice_bangla": "পিঠে ব্যথা গর্ভাবস্থায় সাধারণ। হালকা ব্যায়াম, ঠান্ডা বা গরম সেঁক দিতে পারেন। শক্ত গদিতে শুয়ে থাকুন।",
+      "advice_english": "Back pain is common in pregnancy. Gentle stretching, warm compress, and firm mattress can help. Not concerning unless severe.",
+      "escalation_required": false,
+      "suggested_action": "Gentle exercise, posture support."
+    },
+    {
+      "id": "fatigue",
+      "keywords": ["ক্লান্ত", "দুর্বল", "tired", "fatigue", "weak", "শক্তি নেই"],
+      "triage_tier": "green",
+      "advice_bangla": "গর্ভাবস্থায় ক্লান্তি অনুভব করা স্বাভাবিক। পর্যাপ্ত ঘুম, পুষ্টিকর খাবার ও হালকা হাঁটার চেষ্টা করুন।",
+      "advice_english": "Fatigue is very common in pregnancy. Ensure adequate sleep, nutritious meals, and light activity. No immediate concern.",
+      "escalation_required": false,
+      "suggested_action": "Rest, nutrition, light activity."
+    },
+    {
+      "id": "heartburn",
+      "keywords": ["বুক জ্বালা", "এসিডিটি", "heartburn", "acidity", "gastric"],
+      "triage_tier": "green",
+      "advice_bangla": "বুক জ্বালা গর্ভাবস্থায় সাধারণ। ছোট ছোট করে খান, শুলে মাথা উঁচু রাখুন। মশলাদার খাবার এড়িয়ে চলুন।",
+      "advice_english": "Heartburn is common in pregnancy. Eat small frequent meals, avoid spicy food, and prop head up when lying. No concern.",
+      "escalation_required": false,
+      "suggested_action": "Dietary changes, head elevation when lying."
+    }
+  ],
+  "default": {
+    "triage_tier": "green",
+    "advice_bangla": "আপনার বর্ণিত সমস্যাটি সাধারণ মনে হচ্ছে। পর্যাপ্ত বিশ্রাম ও পানি পান করুন। যদি সমস্যা বাড়ে বা নতুন লক্ষণ দেখা দেয় তাহলে ডাক্তারকে জানান।",
+    "advice_english": "Your described symptom seems mild. Rest well, stay hydrated, and eat nutritious food. Contact your provider if symptoms worsen or new symptoms appear.",
+    "escalation_required": false,
+    "suggested_action": "Monitor and maintain routine care."
+  }
+}

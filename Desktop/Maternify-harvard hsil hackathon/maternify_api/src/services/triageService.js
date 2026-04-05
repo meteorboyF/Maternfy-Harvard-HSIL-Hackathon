@@ -8,8 +8,14 @@
 const Anthropic = require('@anthropic-ai/sdk')
 const supabase = require('../config/supabase')
 const { db: firestore } = require('../config/firebase')
+const { mockTriage } = require('./mockTriageService')
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const USE_MOCK = !process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your_claude_api_key'
+const anthropic = USE_MOCK ? null : new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+if (USE_MOCK) {
+  console.warn('[TriageService] ANTHROPIC_API_KEY not set — using keyword mock mode for demo.')
+}
 
 const SYSTEM_PROMPT = `You are the AI triage engine for Maternify, a maternal health platform for Bangladesh.
 The patient's recent vitals: {{vitals_json}}
@@ -75,31 +81,33 @@ async function runTriage(patientId, inputText, inputLang, mlRiskTier = 'green') 
     .replace('{{week_or_day}}', weekOrDay)
     .replace('{{risk_tier}}', mlRiskTier)
 
-  // 4. Call Claude API
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 512,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: inputText }],
-  })
-
-  // 5. Parse JSON response
-  const rawContent = message.content[0].text.trim()
+  // 4. Call Claude API (or use keyword mock for demo)
   let parsed
-  try {
-    // Strip any accidental markdown fences
-    const jsonStr = rawContent.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim()
-    parsed = JSON.parse(jsonStr)
-  } catch {
-    throw new Error(`Claude returned non-JSON: ${rawContent.slice(0, 200)}`)
+  if (USE_MOCK) {
+    parsed = mockTriage(inputText)
+  } else {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 512,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: inputText }],
+    })
+
+    // 5. Parse JSON response
+    const rawContent = message.content[0].text.trim()
+    try {
+      const jsonStr = rawContent.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim()
+      parsed = JSON.parse(jsonStr)
+    } catch {
+      throw new Error(`Claude returned non-JSON: ${rawContent.slice(0, 200)}`)
+    }
+
+    if (!['green', 'yellow', 'red'].includes(parsed.triage_tier)) {
+      throw new Error(`Invalid triage_tier from Claude: ${parsed.triage_tier}`)
+    }
   }
 
   const { triage_tier, advice_bangla, advice_english, escalation_required, suggested_action } = parsed
-
-  // Validate tier
-  if (!['green', 'yellow', 'red'].includes(triage_tier)) {
-    throw new Error(`Invalid triage_tier from Claude: ${triage_tier}`)
-  }
 
   // 6. Persist to Supabase
   const { data: triageEvent, error: insertErr } = await supabase

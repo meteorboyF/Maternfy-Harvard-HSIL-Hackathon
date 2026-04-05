@@ -85,7 +85,7 @@ class _DietaryViewState extends State<_DietaryView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('খাদ্য পরামর্শ'),
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF993556),
         foregroundColor: Colors.white,
         leading: const BackButton(),
       ),
@@ -218,7 +218,7 @@ class _EmptyState extends StatelessWidget {
                 .map((s) => ActionChip(
                       label: Text(s, style: const TextStyle(fontSize: 12)),
                       backgroundColor: const Color(0xFFFCE4EC),
-                      side: const BorderSide(color: Color(0xFFE91E8C)),
+                      side: const BorderSide(color: Color(0xFF993556)),
                       onPressed: () => onSuggestion(s),
                     ))
                 .toList(),
@@ -294,7 +294,7 @@ class _ConversationList extends StatelessWidget {
                 .map((s) => ActionChip(
                       label: Text(s, style: const TextStyle(fontSize: 11)),
                       backgroundColor: const Color(0xFFFCE4EC),
-                      side: const BorderSide(color: Color(0xFFE91E8C)),
+                      side: const BorderSide(color: Color(0xFF993556)),
                       onPressed: () => onSuggestion(s),
                     ))
                 .toList(),
@@ -327,7 +327,7 @@ class _MessagePair extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE91E8C),
+                color: const Color(0xFF993556),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -527,7 +527,7 @@ class _InputBar extends StatelessWidget {
               return FloatingActionButton.small(
                 onPressed:
                     loading ? null : () => onSubmit(controller.text),
-                backgroundColor: const Color(0xFFE91E8C),
+                backgroundColor: const Color(0xFF993556),
                 elevation: 0,
                 child: loading
                     ? const SizedBox(

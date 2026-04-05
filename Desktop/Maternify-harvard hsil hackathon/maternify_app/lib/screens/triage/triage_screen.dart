@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../blocs/triage/triage_bloc.dart';
 import '../../models/triage_event.dart';
 
@@ -60,16 +61,14 @@ class _TriageViewState extends State<_TriageView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI ট্রায়াজ'),
-        backgroundColor: const Color(0xFFE91E8C),
-        foregroundColor: Colors.white,
+        title: Text('AI ট্রায়াজ', style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
         actions: [
           // Language toggle
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: DropdownButton<String>(
               value: _selectedLang,
-              dropdownColor: const Color(0xFFE91E8C),
+              dropdownColor: const Color(0xFF993556),
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               underline: const SizedBox(),
               icon: const Icon(Icons.language, color: Colors.white),
@@ -128,11 +127,11 @@ class _TriageViewState extends State<_TriageView> {
                           : 'Describe your symptoms...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFFE91E8C)),
+                        borderSide: const BorderSide(color: Color(0xFF993556)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFFE91E8C), width: 2),
+                        borderSide: const BorderSide(color: Color(0xFF993556), width: 2),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
@@ -144,7 +143,7 @@ class _TriageViewState extends State<_TriageView> {
                     final loading = state is TriageConversation && state.isLoading;
                     return FloatingActionButton.small(
                       onPressed: loading ? null : () => _send(ctx),
-                      backgroundColor: const Color(0xFFE91E8C),
+                      backgroundColor: const Color(0xFF993556),
                       child: loading
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : const Icon(Icons.send, color: Colors.white),
@@ -172,7 +171,7 @@ class _WelcomePrompt extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.chat_bubble_outline, size: 64, color: Color(0xFFE91E8C)),
+            const Icon(Icons.chat_bubble_outline, size: 64, color: Color(0xFF993556)),
             const SizedBox(height: 16),
             Text(
               lang == 'bn'
@@ -195,7 +194,6 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    final tierColor = _tierColor(message.triageTier);
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -208,7 +206,7 @@ class _ChatBubble extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser ? const Color(0xFFE91E8C) : Colors.white,
+                color: isUser ? const Color(0xFF993556) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -216,40 +214,66 @@ class _ChatBubble extends StatelessWidget {
                   bottomRight: Radius.circular(isUser ? 4 : 18),
                 ),
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))],
-                border: !isUser && tierColor != null ? Border.all(color: tierColor, width: 2) : null,
               ),
               child: Text(
                 message.text,
-                style: TextStyle(
+                style: GoogleFonts.nunito(
                   color: isUser ? Colors.white : Colors.black87,
                   fontSize: 15,
                 ),
               ),
             ),
-            // Escalation warning badge
-            if (!isUser && message.escalationRequired)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text('⚠️ ডাক্তারের সাথে যোগাযোগ করুন', style: TextStyle(color: Colors.white, fontSize: 11)),
-              ),
+            // Triage result card (colored, for AI responses)
+            if (!isUser && message.triageTier != null)
+              _TriageResultCard(tier: message.triageTier!, escalation: message.escalationRequired),
           ],
         ),
       ),
     );
   }
 
-  Color? _tierColor(TriageTier? tier) {
-    switch (tier) {
-      case TriageTier.red: return Colors.red;
-      case TriageTier.yellow: return Colors.orange;
-      case TriageTier.green: return Colors.green;
-      default: return null;
-    }
+}
+
+class _TriageResultCard extends StatelessWidget {
+  final TriageTier tier;
+  final bool escalation;
+  const _TriageResultCard({required this.tier, required this.escalation});
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, icon, label) = switch (tier) {
+      TriageTier.green  => (const Color(0xFF1D9E75), '✓', 'চিন্তার কিছু নেই'),
+      TriageTier.yellow => (const Color(0xFFBA7517), '⚠', 'ডাক্তারের সাথে কথা বলুন'),
+      TriageTier.red    => (const Color(0xFFE24B4A), '🚨', 'এখনই হাসপাতালে যান'),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withOpacity(tier == TriageTier.red ? 0.8 : 0.4),
+          width: tier == TriageTier.red ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.nunito(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -320,7 +344,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
         child: Container(
           width: 8,
           height: 8,
-          decoration: const BoxDecoration(color: Color(0xFFE91E8C), shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: Color(0xFF993556), shape: BoxShape.circle),
         ),
       );
 }

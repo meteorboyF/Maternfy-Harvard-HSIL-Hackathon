@@ -10,6 +10,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
     on<AuthStarted>(_onAuthStarted);
     on<AuthGoogleSignInRequested>(_onGoogleSignIn);
+    on<AuthEmailSignInRequested>(_onEmailSignIn);
     on<AuthSignOutRequested>(_onSignOut);
   }
 
@@ -36,6 +37,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthUnauthenticated());
       }
+    } catch (e) {
+      emit(AuthError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onEmailSignIn(
+    AuthEmailSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final credential = await FirebaseService.auth.signInWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
+      if (credential.user != null) {
+        emit(AuthAuthenticated(user: credential.user!));
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'user-not-found'  => 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই',
+        'wrong-password'  => 'পাসওয়ার্ড ভুল হয়েছে',
+        'invalid-email'   => 'ইমেইল ঠিকানাটি সঠিক নয়',
+        'user-disabled'   => 'অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে',
+        _                 => e.message ?? 'লগইন ব্যর্থ হয়েছে',
+      };
+      emit(AuthError(message: msg));
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }

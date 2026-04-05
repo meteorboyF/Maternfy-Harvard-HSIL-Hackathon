@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-04T23:00
+## Last Updated: 2026-04-05T16:00
 
 ## Completed Features
 
@@ -33,6 +33,17 @@
 - [x] F18: Dietary advisor — Claude RAG + Bangladeshi nutrition KB, Node API `/dietary`, Flutter DietaryScreen (`180c05f`)
 - [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (`ce68a04`)
 - [x] F20: Analytics page — Next.js dashboard: KPI strip, triage tier donut, population vitals trend, EPDS histogram, alert volume bar chart, top-5 risk table (Recharts + Supabase server queries)
+
+### Phase 6 — Demo-Ready ✅
+- [x] Demo seed script — `scripts/seed_demo_data.py` — 8 named patients, 14-day preeclampsia vitals trajectory, 6 triage events, 4 messages, 4 alerts
+- [x] Mock AI mode — triage falls back to keyword matching when no ANTHROPIC_API_KEY; auto-upgrades when key is set
+- [x] Mock risk score endpoint — `GET /api/patients/:id/risk-score` with BP threshold logic + hardcoded SHAP values
+- [x] Mock patient summary endpoint — `GET /api/patients/:id/summary` built from real Supabase data
+- [x] Flutter theme overhaul — brand color #993556, Nunito font via google_fonts, rounded cards, subtle elevation
+- [x] Login screen — email+password + Google sign-in, patient/doctor toggle, demo auto-fill button
+- [x] Home screen — updated greeting card with risk tier badge, SOS FAB, improved nav icons
+- [x] AI Engineer Handoff doc — `AI_ENGINEER_HANDOFF.md` — all mock endpoints, training data format, GPU setup
+- [x] Firebase demo accounts guide — `scripts/create_firebase_accounts.md`
 
 ### Infrastructure & Fixes ✅
 - [x] Firebase packages upgraded to v3/v5 (Dart 3.7 web compat) (`e8d07d2`)
@@ -96,10 +107,27 @@ python training/train_all.py --kaggle    # use Kaggle dataset
 ---
 
 ## In Progress
-- All features complete ✅ — Maternify v1.0 ready for demo
+- All features complete ✅ — Maternify v1.0 demo-ready
+
+## Demo Credentials
+```
+Patient login:  demo.mother@maternify.app  /  Demo@1234
+Doctor login:   demo.doctor@maternify.app  /  Demo@1234
+GitHub repo:    https://github.com/meteorboyF/Maternify-Harvard-HSIL-Hackathon
+```
 
 ## Known Issues
-- Supabase URL + anon key still needed as `--dart-define` flags (see run command above)
-- `saved_models/` not committed — see `maternify_ml/TRAINING_GUIDE.md`
-- Android Google Sign-In requires SHA-1 fingerprint (Chrome works without it)
-- Node API `.env` needs `ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, Firebase service account keys
+- Supabase URL + anon key needed as `--dart-define` flags (see run command above)
+- `saved_models/` not committed — ML models need training first (see `AI_ENGINEER_HANDOFF.md`)
+- Android emulator: Android Studio not yet installed. Use Chrome (`flutter run -d chrome`) for demo.
+- Firebase demo accounts must be created manually (see `scripts/create_firebase_accounts.md`)
+- Node API `.env` needs `SUPABASE_SERVICE_ROLE_KEY` + Firebase service account (triage mock works without Claude key)
+
+## Quick Demo Steps
+1. Fill `.env.seed` with Supabase credentials → `python scripts/seed_demo_data.py`
+2. Create Firebase accounts (see `scripts/create_firebase_accounts.md`)
+3. `cd maternify_api && npm run dev` (starts on :3000, mock triage ready)
+4. `cd maternify_dashboard && npm run dev` (starts on :3001)
+5. `flutter run -d chrome --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+6. Sign in as `demo.mother@maternify.app` → see dashboard, log vitals, send symptom → get mock triage response
+7. Sign in as `demo.doctor@maternify.app` → patient panel with Sumaiya + Taslima in RED

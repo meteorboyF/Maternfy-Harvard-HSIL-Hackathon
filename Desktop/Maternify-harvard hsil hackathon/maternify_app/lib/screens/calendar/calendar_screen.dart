@@ -183,7 +183,7 @@ class _ProgressCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFFE91E8C), Color(0xFFFF6B9D)],
+            colors: [Color(0xFF993556), Color(0xFFBF4070)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -327,7 +327,7 @@ class _BabySizeCard extends StatelessWidget {
               child: Text(
                 'সপ্তাহ $week / 40',
                 style: const TextStyle(
-                    color: Color(0xFFE91E8C), fontWeight: FontWeight.w600),
+                    color: Color(0xFF993556), fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -500,7 +500,7 @@ class _MonthCalendar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _LegendDot(color: const Color(0xFFE91E8C), label: 'ভাইটালস'),
+                _LegendDot(color: const Color(0xFF993556), label: 'ভাইটালস'),
                 const SizedBox(width: 12),
                 _LegendDot(
                     color: const Color(0xFF388E3C), label: 'ট্রায়াজ (সবুজ)'),
@@ -538,7 +538,7 @@ class _DayCell extends StatelessWidget {
       margin: const EdgeInsets.all(2),
       decoration: isToday
           ? BoxDecoration(
-              color: const Color(0xFFE91E8C),
+              color: const Color(0xFF993556),
               borderRadius: BorderRadius.circular(8),
             )
           : null,
@@ -562,7 +562,7 @@ class _DayCell extends StatelessWidget {
                   height: 5,
                   margin: const EdgeInsets.symmetric(horizontal: 1),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE91E8C),
+                    color: Color(0xFF993556),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -662,7 +662,7 @@ class _MilestoneRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: isDone
-                  ? const Color(0xFFE91E8C)
+                  ? const Color(0xFF993556)
                   : isNext
                       ? const Color(0xFFFCE4EC)
                       : Colors.grey.shade200,
@@ -702,7 +702,7 @@ class _MilestoneRow extends StatelessWidget {
           ),
           if (isNext)
             const Icon(Icons.arrow_forward_ios,
-                size: 14, color: Color(0xFFE91E8C)),
+                size: 14, color: Color(0xFF993556)),
         ],
       ),
     );
