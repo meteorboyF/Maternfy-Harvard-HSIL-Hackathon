@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1045513431035",
+    "project_id": "maternify-91c75",
+    "storage_bucket": "maternify-91c75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1045513431035:android:4d0cddf3675d8e49808d5e",
+        "android_client_info": {
+          "package_name": "com.maternify.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCp1CCA9lOt43PkPADHrNEYHCcLcJkbyC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

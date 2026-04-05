@@ -1,6 +1,6 @@
 # Maternify Build Progress
 
-## Last Updated: 2026-04-05T16:00
+## Last Updated: 2026-04-06T02:00
 
 ## Completed Features
 
@@ -34,7 +34,7 @@
 - [x] F19: NLP mood journal — Claude sentiment analysis, mood score/emoji/themes, EPDS concern flag, Supabase persistence, Flutter JournalScreen with write tab + history tab + mood trend strip (`ce68a04`)
 - [x] F20: Analytics page — Next.js dashboard: KPI strip, triage tier donut, population vitals trend, EPDS histogram, alert volume bar chart, top-5 risk table (Recharts + Supabase server queries)
 
-### Phase 6 — Demo-Ready ✅
+### Phase 6 — Demo Infrastructure ✅
 - [x] Demo seed script — `scripts/seed_demo_data.py` — 8 named patients, 14-day preeclampsia vitals trajectory, 6 triage events, 4 messages, 4 alerts
 - [x] Mock AI mode — triage falls back to keyword matching when no ANTHROPIC_API_KEY; auto-upgrades when key is set
 - [x] Mock risk score endpoint — `GET /api/patients/:id/risk-score` with BP threshold logic + hardcoded SHAP values
@@ -44,6 +44,28 @@
 - [x] Home screen — updated greeting card with risk tier badge, SOS FAB, improved nav icons
 - [x] AI Engineer Handoff doc — `AI_ENGINEER_HANDOFF.md` — all mock endpoints, training data format, GPU setup
 - [x] Firebase demo accounts guide — `scripts/create_firebase_accounts.md`
+
+### Phase 7 — Android Setup ✅
+- [x] Android Studio Panda 3 (2025.3.3) installed
+- [x] Android SDK cmdline-tools installed
+- [x] All SDK licenses accepted
+- [x] Android 14 (API 34) system image downloaded
+- [x] AVD `Maternify_Demo` (Pixel 8 Pro) created
+- [x] Android scaffold regenerated (`flutter create --platforms=android`) — fixed v1 embedding error
+- [x] Firebase Google Services gradle plugin added to `settings.gradle.kts` + `app/build.gradle.kts`
+- [x] Supabase tables created (6 tables, RLS disabled for demo)
+- [x] Seed data: 8 patients, 52 vitals, 6 triage events, 4 messages, 4 alerts
+- [x] All .env files filled: `maternify_api/.env`, `maternify_dashboard/.env.local`, `.env.seed`
+- [x] Firebase Auth demo accounts created: demo.mother + demo.doctor
+- [x] `SETUP.md` created — full setup guide with all credentials
+- [x] `NEXT_SESSION_PROMPT.md` created — briefing for next Claude session
+
+### Remaining (next session)
+- [ ] Enable Email/Password provider in Firebase Console
+- [ ] Link Firebase UIDs to Supabase patient records (SQL update)
+- [ ] Confirm Flutter Android build succeeds (Gradle was downloading)
+- [ ] End-to-end demo test: sign in → vitals → triage → doctor dashboard
+- [ ] Final git push
 
 ### Infrastructure & Fixes ✅
 - [x] Firebase packages upgraded to v3/v5 (Dart 3.7 web compat) (`e8d07d2`)
