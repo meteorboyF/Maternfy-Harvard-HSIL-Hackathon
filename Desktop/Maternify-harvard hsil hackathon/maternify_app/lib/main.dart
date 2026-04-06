@@ -40,8 +40,7 @@ class MaternifyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Maternify',
         debugShowCheckedModeBanner: false,
-        // device_preview requires these two lines
-        useInheritedMediaQuery: true,
+        // device_preview locale support
         locale: DevicePreview.locale(context),
         builder: DevicePreview.appBuilder,
         theme: _buildTheme(),

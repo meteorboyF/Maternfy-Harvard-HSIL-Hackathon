@@ -167,6 +167,11 @@ C:/Users/ASUS/AppData/Local/Programs/Python/Python313/python.exe -X utf8 scripts
 
 ## Known Issues & Fixes
 
+### `record_linux` compile error on Android build
+**Error:** `record_linux-0.7.2 missing implementations for members`
+**Fix:** Already applied in pubspec.yaml — `record: ^5.2.0` + `dependency_overrides: record_linux: ^0.8.0`
+Run `flutter pub get` in a fresh terminal before building again.
+
 ### Gradle timeout on first Android build
 If `flutter run` fails with "Timeout waiting for gradle":
 ```bash

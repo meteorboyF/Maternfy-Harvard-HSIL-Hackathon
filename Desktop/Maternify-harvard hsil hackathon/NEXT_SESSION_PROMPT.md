@@ -59,7 +59,17 @@ UPDATE alerts SET provider_id = 'DOCTOR_FIREBASE_UID'
 WHERE provider_id = '00000000-0000-0000-0000-000000000002';
 ```
 
-#### 2. Complete the Android Flutter build
+#### 2. Fix `record_linux` compile error FIRST (already done in pubspec.yaml)
+The build failed with: `record_linux-0.7.2 missing implementations`.
+Already fixed: `record: ^5.2.0` + `dependency_overrides: record_linux: ^0.8.0` in pubspec.yaml.
+
+Open a **VS Code terminal** (Ctrl+`) and run:
+```bash
+cd "c:\Users\ASUS\Desktop\Maternify-harvard hsil hackathon\maternify_app"
+flutter pub get
+```
+
+#### 3. Complete the Android Flutter build
 The app was building when context ran out. Gradle was downloading (timed out once, was retrying).
 
 Run command (emulator must be started first):
