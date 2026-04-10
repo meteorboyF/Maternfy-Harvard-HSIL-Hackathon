@@ -1,9 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const { verifyToken } = require('../middleware/auth')
+const { verifyFirebaseToken } = require('../middleware/auth')
 const { createEntry, getHistory } = require('../controllers/journalController')
 
-router.post('/', verifyToken, createEntry)
-router.get('/:patientId', verifyToken, getHistory)
+router.post('/', verifyFirebaseToken, createEntry)
+router.get('/:patientId', verifyFirebaseToken, getHistory)
 
 module.exports = router
