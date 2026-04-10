@@ -10,7 +10,9 @@ import '../dietary/dietary_screen.dart';
 import '../journal/journal_screen.dart';
 import '../sos/sos_screen.dart';
 import '../doctor/patient_detail_screen.dart';
+import '../settings/settings_screen.dart';
 import '../specialist/specialist_list_screen.dart';
+import '../timeline/timeline_screen.dart';
 import '../triage/triage_screen.dart';
 import '../vitals/vitals_screen.dart';
 
@@ -70,9 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Icons.language_rounded),
               ),
               IconButton(
-                onPressed: () =>
-                    context.read<AuthBloc>().add(AuthSignOutRequested()),
-                icon: const Icon(Icons.logout_rounded),
+                tooltip: L.t(en, 'সেটিংস', 'Settings'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SettingsScreen(session: authState.user),
+                  ),
+                ),
+                icon: const Icon(Icons.settings_outlined),
               ),
             ],
           ),
@@ -89,7 +95,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() => _selectedIndex = index),
             destinations: [
               NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
+                icon: _repository.unreadClinicAlertCount > 0
+                    ? Badge(
+                        label: Text(
+                            '${_repository.unreadClinicAlertCount}'),
+                        child: const Icon(Icons.home_outlined),
+                      )
+                    : const Icon(Icons.home_outlined),
                 selectedIcon: const Icon(Icons.home_rounded),
                 label: L.t(en, 'হোম', 'Home'),
               ),
@@ -256,7 +268,9 @@ class _MotherDashboard extends StatelessWidget {
                       'Your care team\'s notes'),
                   icon: Icons.local_hospital_outlined,
                   color: const Color(0xFF5D53B7),
+                  badgeCount: repository.unreadClinicAlertCount,
                   onTap: () {
+                    repository.markClinicAlertsRead();
                     showModalBottomSheet<void>(
                       context: context,
                       showDragHandle: true,
@@ -270,7 +284,23 @@ class _MotherDashboard extends StatelessWidget {
             const SizedBox(height: 12),
             // Care Network tile — full width
             _CareNetworkTile(en: en),
+            const SizedBox(height: 10),
+            // Timeline tile — full width
+            _TimelineTile(en: en, patientId: patient.id),
             const SizedBox(height: 16),
+
+            // My appointments
+            if (repository.appointments.isNotEmpty) ...[
+              Text(
+                L.t(en, 'আমার অ্যাপয়েন্টমেন্ট', 'My Appointments'),
+                style: GoogleFonts.nunito(
+                    fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              ...repository.appointments.map((apt) =>
+                  _PatientAppointmentCard(appointment: apt, en: en)),
+              const SizedBox(height: 16),
+            ],
 
             // AI summary
             Card(
@@ -329,6 +359,9 @@ class _MotherDashboard extends StatelessWidget {
                           'Measure BP again after noon'),
                       subtitle: L.t(en, 'বিশ্রামের পরে রক্তচাপ লগ করুন।',
                           'Log your blood pressure after resting.'),
+                      checked: repository.isCarePlanChecked('care-bp'),
+                      onToggle: () =>
+                          repository.toggleCarePlanItem('care-bp'),
                     ),
                     _CareRow(
                       icon: Icons.medical_information_outlined,
@@ -338,6 +371,9 @@ class _MotherDashboard extends StatelessWidget {
                           'Watch for dizziness or blurred vision'),
                       subtitle: L.t(en, 'লক্ষণ বাড়লে দ্রুত চিকিৎসা নিন।',
                           'Seek care promptly if symptoms worsen.'),
+                      checked: repository.isCarePlanChecked('care-dizziness'),
+                      onToggle: () => repository
+                          .toggleCarePlanItem('care-dizziness'),
                     ),
                     _CareRow(
                       icon: Icons.notifications_active_outlined,
@@ -383,9 +419,34 @@ class _MotherDashboard extends StatelessWidget {
                   fontSize: 17, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            ...repository.alerts.take(3).map(
-                  (alert) => _AlertCard(alert: alert, en: en),
-                ),
+            ...repository.alerts
+                .where((a) => !a.isReviewed)
+                .take(4)
+                .map((alert) => _AlertCard(
+                      alert: alert,
+                      en: en,
+                      onAcknowledged: () =>
+                          repository.acknowledgeAlert(alert.id),
+                      onTap: switch (alert.alertType) {
+                        DemoAlertType.referral => () =>
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    const SpecialistListScreen(),
+                              ),
+                            ),
+                        DemoAlertType.vitals ||
+                        DemoAlertType.triage =>
+                          () => onNavigate(1),
+                        _ => null,
+                      },
+                    )),
+            if (repository.alerts.where((a) => !a.isReviewed).isEmpty)
+              _EmptyState(
+                icon: Icons.notifications_none_rounded,
+                message: L.t(en, 'কোনো নতুন সতর্কতা নেই।',
+                    'No new alerts.'),
+              ),
           ],
         );
       },
@@ -418,6 +479,15 @@ class _DoctorPreviewScreen extends StatelessWidget {
                 tooltip: en ? 'বাংলা' : 'English',
                 onPressed: repository.toggleLanguage,
                 icon: const Icon(Icons.translate_rounded),
+              ),
+              IconButton(
+                tooltip: 'Settings',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SettingsScreen(session: session),
+                  ),
+                ),
+                icon: const Icon(Icons.settings_outlined),
               ),
               IconButton(
                 onPressed: () =>
@@ -724,8 +794,8 @@ class _AppointmentCard extends StatelessWidget {
               Text(
                 L.t(
                   en,
-                  '${repository.motherPatient.weeksGestation} weeks pregnant • BP ${latest.systolicBp}/${latest.diastolicBp} • Kick count ${latest.kickCount}',
                   '${repository.motherPatient.weeksGestation} সপ্তাহ • BP ${latest.systolicBp}/${latest.diastolicBp} • কিক কাউন্ট ${latest.kickCount}',
+                  '${repository.motherPatient.weeksGestation} weeks pregnant • BP ${latest.systolicBp}/${latest.diastolicBp} • Kick count ${latest.kickCount}',
                 ),
                 style: GoogleFonts.nunito(color: const Color(0xFF655A62)),
               ),
@@ -762,8 +832,8 @@ class _AppointmentCard extends StatelessWidget {
               Text(
                 L.t(
                   en,
-                  'Booked after a high-risk symptom event. Patient\'s latest readings are attached.',
                   'উচ্চ-ঝুঁকির লক্ষণের পরে অ্যাপয়েন্টমেন্ট নেওয়া হয়েছে। রোগীর সর্বশেষ রিডিং সংযুক্ত।',
+                  'Booked after a high-risk symptom event. Patient\'s latest readings are attached.',
                 ),
                 style: GoogleFonts.nunito(
                     height: 1.4,
@@ -883,6 +953,7 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const _ActionTile({
     required this.title,
@@ -890,11 +961,12 @@ class _ActionTile extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final tile = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Ink(
@@ -939,6 +1011,13 @@ class _ActionTile extends StatelessWidget {
         ),
       ),
     );
+    if (badgeCount > 0) {
+      return Badge(
+        label: Text('$badgeCount'),
+        child: tile,
+      );
+    }
+    return tile;
   }
 }
 
@@ -978,45 +1057,70 @@ class _CareRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isLast;
+  final bool checked;
+  final VoidCallback? onToggle;
 
   const _CareRow({
     required this.icon,
     required this.title,
     required this.subtitle,
     this.isLast = false,
+    this.checked = false,
+    this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3ECEF),
-              borderRadius: BorderRadius.circular(12),
+    final effectiveColor = checked
+        ? const Color(0xFF197A5B)
+        : const Color(0xFF993556);
+    return InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: effectiveColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                checked ? Icons.check_circle_rounded : icon,
+                size: 18,
+                color: effectiveColor,
+              ),
             ),
-            child: Icon(icon, size: 18, color: const Color(0xFF993556)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
-                Text(subtitle,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                     style: GoogleFonts.nunito(
-                        color: const Color(0xFF6C6068), height: 1.4)),
-              ],
+                      fontWeight: FontWeight.w800,
+                      decoration: checked
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      color: checked
+                          ? const Color(0xFF197A5B)
+                          : const Color(0xFF322730),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: GoogleFonts.nunito(
+                          color: const Color(0xFF6C6068), height: 1.4)),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1026,9 +1130,16 @@ class _AlertCard extends StatelessWidget {
   final DemoAlert alert;
   final bool en;
   final VoidCallback? onReviewed;
+  final VoidCallback? onAcknowledged;
+  final VoidCallback? onTap;
 
-  const _AlertCard(
-      {required this.alert, required this.en, this.onReviewed});
+  const _AlertCard({
+    required this.alert,
+    required this.en,
+    this.onReviewed,
+    this.onAcknowledged,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1040,32 +1151,46 @@ class _AlertCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.12),
-          foregroundColor: color,
-          child: Icon(
-              alert.urgent ? Icons.notifications_active : Icons.info_outline),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.12),
+            foregroundColor: color,
+            child: Icon(
+                alert.urgent ? Icons.notifications_active : Icons.info_outline),
+          ),
+          title: Text(alert.title,
+              style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child:
+                Text(alert.message, style: GoogleFonts.nunito(height: 1.35)),
+          ),
+          trailing: onReviewed != null
+              ? IconButton(
+                  tooltip: L.t(en, 'পর্যালোচিত', 'Mark reviewed'),
+                  icon: const Icon(Icons.check_circle_outline_rounded,
+                      color: Color(0xFF197A5B)),
+                  onPressed: onReviewed,
+                )
+              : onAcknowledged != null
+                  ? TextButton(
+                      onPressed: onAcknowledged,
+                      child: Text(
+                        L.t(en, 'বুঝলাম', 'Got it'),
+                        style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF993556)),
+                      ),
+                    )
+                  : Text(
+                      DateFormat('h:mm a').format(alert.createdAt),
+                      style: GoogleFonts.nunito(
+                          fontSize: 11, color: const Color(0xFF786B72)),
+                    ),
         ),
-        title: Text(alert.title,
-            style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child:
-              Text(alert.message, style: GoogleFonts.nunito(height: 1.35)),
-        ),
-        trailing: onReviewed != null
-            ? IconButton(
-                tooltip: L.t(en, 'পর্যালোচিত', 'Mark reviewed'),
-                icon: const Icon(Icons.check_circle_outline_rounded,
-                    color: Color(0xFF197A5B)),
-                onPressed: onReviewed,
-              )
-            : Text(
-                DateFormat('h:mm a').format(alert.createdAt),
-                style: GoogleFonts.nunito(
-                    fontSize: 11, color: const Color(0xFF786B72)),
-              ),
       ),
     );
   }
@@ -1095,8 +1220,8 @@ class _ProviderPeekSheet extends StatelessWidget {
           Text(
             L.t(
               en,
-              'Latest patient status from your care team.',
               'আপনার চিকিৎসকের পাঠানো সর্বশেষ রোগীর অবস্থা।',
+              'Latest patient status from your care team.',
             ),
             style: GoogleFonts.nunito(color: const Color(0xFF675A63)),
           ),
@@ -1380,14 +1505,36 @@ class _ProviderPatientCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  L.t(
-                    en,
-                    '${patient.weeksGestation} সপ্তাহ • BP ${patient.latestBp} • ${patient.daysSinceLog} দিন আগে লগ',
-                    '${patient.weeksGestation} weeks • BP ${patient.latestBp} • logged ${patient.daysSinceLog}d ago',
+                RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.nunito(color: const Color(0xFF655A62)),
+                    children: [
+                      TextSpan(
+                        text: L.t(
+                          en,
+                          '${patient.weeksGestation} সপ্তাহ • BP ${patient.latestBp} • ',
+                          '${patient.weeksGestation} weeks • BP ${patient.latestBp} • ',
+                        ),
+                      ),
+                      TextSpan(
+                        text: L.t(
+                          en,
+                          '${patient.daysSinceLog} দিন আগে লগ',
+                          'logged ${patient.daysSinceLog}d ago',
+                        ),
+                        style: GoogleFonts.nunito(
+                          color: patient.daysSinceLog >= 3
+                              ? const Color(0xFFD1423B)
+                              : patient.daysSinceLog >= 2
+                                  ? const Color(0xFFB17616)
+                                  : const Color(0xFF197A5B),
+                          fontWeight: patient.daysSinceLog >= 2
+                              ? FontWeight.w800
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
-                  style:
-                      GoogleFonts.nunito(color: const Color(0xFF655A62)),
                 ),
                 const SizedBox(height: 8),
                 Text(patient.summary,
@@ -1653,6 +1800,192 @@ class _VitalsNudgeBanner extends StatelessWidget {
             onPressed: () => repository.dismissNudge(nudge.patientId),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Timeline tile (patient home) ──────────────────────────────────────────────
+
+class _TimelineTile extends StatelessWidget {
+  final bool en;
+  final String patientId;
+
+  const _TimelineTile({required this.en, required this.patientId});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+            builder: (_) => TimelineScreen(patientId: patientId)),
+      ),
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1F2530).withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+              color: const Color(0xFF1F2530).withValues(alpha: 0.12)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1F2530).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.timeline_rounded,
+                    color: Color(0xFF1F2530), size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L.t(en, 'কার্যকলাপের ইতিহাস', 'Activity Timeline'),
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF322730),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      L.t(en, 'সমস্ত রিডিং, লক্ষণ ও বার্তা',
+                          'All readings, symptoms & clinic messages'),
+                      style: GoogleFonts.nunito(
+                          fontSize: 12.5,
+                          color: const Color(0xFF675A63)),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFFB0A0A8)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Patient appointment card ──────────────────────────────────────────────────
+
+class _PatientAppointmentCard extends StatelessWidget {
+  final DemoAppointment appointment;
+  final bool en;
+
+  const _PatientAppointmentCard(
+      {required this.appointment, required this.en});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFF5D53B7).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                appointment.isOnline
+                    ? Icons.videocam_rounded
+                    : Icons.local_hospital_outlined,
+                color: const Color(0xFF5D53B7),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appointment.displayName(en),
+                    style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                  Text(
+                    appointment.displaySpecialty(en),
+                    style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        color: const Color(0xFF786B72)),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF197A5B).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    L.t(en, 'নিশ্চিত', 'Confirmed'),
+                    style: GoogleFonts.nunito(
+                      fontSize: 10,
+                      color: const Color(0xFF197A5B),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  appointment.displaySlot(en),
+                  style: GoogleFonts.nunito(
+                      fontSize: 11, color: const Color(0xFF9C8D96)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String message;
+
+  const _EmptyState({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon,
+                size: 40, color: Colors.grey.withValues(alpha: 0.35)),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              style: GoogleFonts.nunito(
+                  color: const Color(0xFF9C8D96), fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }

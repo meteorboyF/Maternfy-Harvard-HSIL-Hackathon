@@ -30,6 +30,17 @@ class DemoSession {
   });
 }
 
+enum DemoAlertType {
+  general,
+  vitals,
+  triage,
+  sos,
+  note,       // doctor note to patient
+  riskUpdate, // doctor risk override
+  referral,   // doctor referral
+  broadcast,  // clinic broadcast
+}
+
 class DemoAlert {
   final String id;
   final String title;
@@ -38,6 +49,7 @@ class DemoAlert {
   final DemoRiskLevel riskLevel;
   final bool urgent;
   final bool isReviewed;
+  final DemoAlertType alertType;
 
   const DemoAlert({
     required this.id,
@@ -47,6 +59,7 @@ class DemoAlert {
     required this.riskLevel,
     this.urgent = false,
     this.isReviewed = false,
+    this.alertType = DemoAlertType.general,
   });
 
   DemoAlert copyWithReviewed() => DemoAlert(
@@ -57,6 +70,7 @@ class DemoAlert {
         riskLevel: riskLevel,
         urgent: urgent,
         isReviewed: true,
+        alertType: alertType,
       );
 }
 
@@ -386,6 +400,33 @@ const _seedSpecialists = <DemoSpecialist>[
   ),
 ];
 
+// ── Timeline model ────────────────────────────────────────────────────────────
+
+class DemoTimelineEntry {
+  final String id;
+  final String type; // 'vitals' | 'triage' | 'alert' | 'sos'
+  final String titleBn;
+  final String titleEn;
+  final String subtitleBn;
+  final String subtitleEn;
+  final DateTime timestamp;
+  final DemoRiskLevel severity;
+
+  const DemoTimelineEntry({
+    required this.id,
+    required this.type,
+    required this.titleBn,
+    required this.titleEn,
+    required this.subtitleBn,
+    required this.subtitleEn,
+    required this.timestamp,
+    this.severity = DemoRiskLevel.green,
+  });
+
+  String title(bool en) => en ? titleEn : titleBn;
+  String subtitle(bool en) => en ? subtitleEn : subtitleBn;
+}
+
 // ── Doctor-only models ────────────────────────────────────────────────────────
 
 class DemoCareItem {
@@ -511,6 +552,13 @@ class DemoRepository extends ChangeNotifier {
   final List<DemoVitalsAnnotation> _annotations = [];
   final List<DemoVitalsNudge> _nudges = [];
 
+  // Unread clinic alert counter (for patient badge)
+  int _unreadClinicAlerts = 0;
+  int get unreadClinicAlertCount => _unreadClinicAlerts;
+
+  // Care plan check-off
+  final Set<String> _checkedCarePlanIds = {};
+
   List<DemoSpecialist> get specialists => List.unmodifiable(_specialists);
   List<DemoAppointment> get appointments => List.unmodifiable(_appointments);
 
@@ -560,9 +608,11 @@ class DemoRepository extends ChangeNotifier {
         message: note,
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.green,
+        alertType: DemoAlertType.note,
       ),
       ..._alerts,
     ];
+    _unreadClinicAlerts++;
     notifyListeners();
   }
 
@@ -575,9 +625,11 @@ class DemoRepository extends ChangeNotifier {
         message: message,
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.green,
+        alertType: DemoAlertType.broadcast,
       ),
       ..._alerts,
     ];
+    _unreadClinicAlerts++;
     notifyListeners();
   }
 
@@ -611,9 +663,11 @@ class DemoRepository extends ChangeNotifier {
         message: '$levelLabel — $reason',
         createdAt: DateTime.now(),
         riskLevel: newLevel,
+        alertType: DemoAlertType.riskUpdate,
       ),
       ..._alerts,
     ];
+    _unreadClinicAlerts++;
     _refreshProviderPatients();
     notifyListeners();
   }
@@ -672,9 +726,11 @@ class DemoRepository extends ChangeNotifier {
             : 'আপনার চিকিৎসক আপনাকে ${specialist.nameBn} (${specialist.specialtyBn})-এর কাছে রেফার করেছেন।',
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.yellow,
+        alertType: DemoAlertType.referral,
       ),
       ..._alerts,
     ];
+    _unreadClinicAlerts++;
     notifyListeners();
   }
 
@@ -694,6 +750,110 @@ class DemoRepository extends ChangeNotifier {
   void dismissNudge(String patientId) {
     _nudges.removeWhere((n) => n.patientId == patientId);
     notifyListeners();
+  }
+
+  // Clinic alert unread tracking
+  void markClinicAlertsRead() {
+    _unreadClinicAlerts = 0;
+    notifyListeners();
+  }
+
+  // Care plan check-off
+  bool isCarePlanChecked(String id) => _checkedCarePlanIds.contains(id);
+  void toggleCarePlanItem(String id) {
+    if (_checkedCarePlanIds.contains(id)) {
+      _checkedCarePlanIds.remove(id);
+    } else {
+      _checkedCarePlanIds.add(id);
+    }
+    notifyListeners();
+  }
+
+  // Patient acknowledgement of alerts
+  void acknowledgeAlert(String alertId) {
+    _alerts = _alerts
+        .map((a) => a.id == alertId ? a.copyWithReviewed() : a)
+        .toList();
+    notifyListeners();
+  }
+
+  // Unified patient timeline
+  List<DemoTimelineEntry> getPatientTimeline(String patientId) {
+    final entries = <DemoTimelineEntry>[];
+
+    // Vitals
+    final vitals = getPatientVitals(patientId);
+    for (final v in vitals.reversed.take(10)) {
+      final elevated = v.systolicBp >= 140 || v.diastolicBp >= 90;
+      entries.add(DemoTimelineEntry(
+        id: 'v-${v.loggedAt.millisecondsSinceEpoch}',
+        type: 'vitals',
+        titleBn: 'ভাইটালস লগ করা হয়েছে',
+        titleEn: 'Vitals Logged',
+        subtitleBn:
+            'BP ${v.systolicBp}/${v.diastolicBp} mmHg • কিক ${v.kickCount}',
+        subtitleEn:
+            'BP ${v.systolicBp}/${v.diastolicBp} mmHg • Kick ${v.kickCount}',
+        timestamp: v.loggedAt,
+        severity:
+            elevated ? DemoRiskLevel.red : DemoRiskLevel.green,
+      ));
+    }
+
+    // Triage events
+    final triage = getPatientTriageHistory(patientId);
+    for (final t in triage) {
+      final severity = t.tier == 'red'
+          ? DemoRiskLevel.red
+          : t.tier == 'yellow'
+              ? DemoRiskLevel.yellow
+              : DemoRiskLevel.green;
+      entries.add(DemoTimelineEntry(
+        id: 't-${t.id}',
+        type: 'triage',
+        titleBn: 'লক্ষণ বিশ্লেষণ',
+        titleEn: 'Symptom Check',
+        subtitleBn:
+            '"${t.inputText}" — ${t.tier == 'red' ? 'লাল' : t.tier == 'yellow' ? 'হলুদ' : 'সবুজ'}',
+        subtitleEn:
+            '"${t.inputText}" — ${t.tier[0].toUpperCase()}${t.tier.substring(1)}',
+        timestamp: t.createdAt,
+        severity: severity,
+      ));
+    }
+
+    // Alerts (clinic notes, broadcasts, referrals, risk updates, SOS, etc.)
+    for (final a in _alerts) {
+      entries.add(DemoTimelineEntry(
+        id: 'a-${a.id}',
+        type: 'alert',
+        titleBn: a.title,
+        titleEn: a.title,
+        subtitleBn: a.message,
+        subtitleEn: a.message,
+        timestamp: a.createdAt,
+        severity: a.riskLevel,
+      ));
+    }
+
+    // Appointments
+    for (final apt in _appointments) {
+      entries.add(DemoTimelineEntry(
+        id: 'apt-${apt.id}',
+        type: 'appointment',
+        titleBn: 'অ্যাপয়েন্টমেন্ট বুক হয়েছে',
+        titleEn: 'Appointment Booked',
+        subtitleBn:
+            '${apt.displayName(false)} — ${apt.displaySlot(false)}',
+        subtitleEn:
+            '${apt.displayName(true)} — ${apt.displaySlot(true)}',
+        timestamp: apt.bookedAt,
+        severity: DemoRiskLevel.green,
+      ));
+    }
+
+    entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return entries;
   }
 
   Future<void> annotateReading({
@@ -989,6 +1149,7 @@ class DemoRepository extends ChangeNotifier {
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.red,
         urgent: true,
+        alertType: DemoAlertType.sos,
       ),
       ..._alerts,
     ];

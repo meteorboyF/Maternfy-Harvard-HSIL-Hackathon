@@ -194,8 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 14),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 20),
                           BlocBuilder<AuthBloc, AuthState>(
                             builder: (context, state) {
                               final isLoading = state is AuthLoading;
@@ -227,9 +226,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     spacing: 10,
                     runSpacing: 10,
                     children: const [
-                      _PitchChip(label: 'ব্যক্তিগত মাতৃত্ব রেকর্ড'),
-                      _PitchChip(label: 'বাংলা AI ট্রায়েজ'),
-                      _PitchChip(label: 'জরুরি SOS সহায়তা'),
+                      _PitchChip(label: 'Personal health record'),
+                      _PitchChip(label: 'Bangla AI triage'),
+                      _PitchChip(label: 'One-tap SOS'),
                     ],
                   ),
                 ],
@@ -279,8 +278,8 @@ class _HeroStatusCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   role == DemoRole.mother
-                      ? 'আপনার মাতৃস্বাস্থ্য সঙ্গী'
-                      : 'ক্লিনিক ড্যাশবোর্ড',
+                      ? 'Maternal Health Companion'
+                      : 'Clinic Dashboard',
                   style: GoogleFonts.nunito(
                     color: Colors.white,
                     fontSize: 17,
