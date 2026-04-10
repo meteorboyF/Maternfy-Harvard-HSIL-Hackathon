@@ -9,6 +9,7 @@ import '../../utils/l10n.dart';
 import '../dietary/dietary_screen.dart';
 import '../journal/journal_screen.dart';
 import '../sos/sos_screen.dart';
+import '../doctor/patient_detail_screen.dart';
 import '../specialist/specialist_list_screen.dart';
 import '../triage/triage_screen.dart';
 import '../vitals/vitals_screen.dart';
@@ -147,9 +148,15 @@ class _MotherDashboard extends StatelessWidget {
           Duration(days: (40 - patient.weeksGestation) * 7),
         );
 
+        final nudge = repository.getNudge(patient.id);
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
           children: [
+            if (nudge != null) ...[
+              _VitalsNudgeBanner(
+                  nudge: nudge, en: en, repository: repository),
+              const SizedBox(height: 14),
+            ],
             _RiskBanner(repository: repository),
             const SizedBox(height: 14),
             // Greeting card
@@ -346,8 +353,25 @@ class _MotherDashboard extends StatelessWidget {
                               en,
                               'একবার চাপলেই ক্লিনিক টিম সাথে সাথে জানতে পারবে।',
                               'One tap alerts your clinic team immediately.'),
-                      isLast: true,
+                      isLast: repository
+                          .getCareItems(patient.id)
+                          .isEmpty,
                     ),
+                    ...repository
+                        .getCareItems(patient.id)
+                        .asMap()
+                        .entries
+                        .map((e) => _CareRow(
+                              icon: Icons.medical_services_outlined,
+                              title: L.t(en, 'চিকিৎসকের পরামর্শ',
+                                  "Doctor's Prescription"),
+                              subtitle: e.value.text,
+                              isLast: e.key ==
+                                  repository
+                                          .getCareItems(patient.id)
+                                          .length -
+                                      1,
+                            )),
                   ],
                 ),
               ),
@@ -386,6 +410,11 @@ class _DoctorPreviewScreen extends StatelessWidget {
             title: Text(L.t(en, 'চিকিৎসক ভিউ', 'Doctor View')),
             actions: [
               IconButton(
+                tooltip: L.t(en, 'সকলকে বার্তা', 'Broadcast to All'),
+                onPressed: () => _showBroadcastSheet(context, en, repository),
+                icon: const Icon(Icons.campaign_rounded),
+              ),
+              IconButton(
                 tooltip: en ? 'বাংলা' : 'English',
                 onPressed: repository.toggleLanguage,
                 icon: const Icon(Icons.translate_rounded),
@@ -422,8 +451,8 @@ class _DoctorPreviewScreen extends StatelessWidget {
                     Text(
                       L.t(
                         en,
-                        'Review recent alerts and prioritize urgent patients.',
                         'সাম্প্রতিক সতর্কতা দেখুন এবং জরুরি রোগীদের অগ্রাধিকার দিন।',
+                        'Review recent alerts and prioritize urgent patients.',
                       ),
                       style: GoogleFonts.nunito(
                         color: Colors.white.withValues(alpha: 0.8),
@@ -433,6 +462,14 @@ class _DoctorPreviewScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
+
+              // Stats strip
+              _DoctorStatsStrip(en: en, repository: repository),
+              const SizedBox(height: 14),
+
+              // Quick actions
+              _DoctorQuickActions(en: en),
               const SizedBox(height: 16),
 
               // Incoming appointments
@@ -453,6 +490,29 @@ class _DoctorPreviewScreen extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
 
+              // Today's schedule
+              if (repository.appointments.isNotEmpty) ...[
+                Text(
+                  L.t(en, 'আজকের সময়সূচি', "Today's Schedule"),
+                  style: GoogleFonts.nunito(
+                      fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 110,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: repository.appointments.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) {
+                      final apt = repository.appointments[i];
+                      return _ScheduleChip(appointment: apt, en: en);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               Text(
                 L.t(en, 'সাম্প্রতিক সতর্কতা', 'Recent Alerts'),
                 style: GoogleFonts.nunito(
@@ -460,8 +520,14 @@ class _DoctorPreviewScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               ...repository.alerts
-                  .take(2)
-                  .map((alert) => _AlertCard(alert: alert, en: en)),
+                  .where((a) => !a.isReviewed)
+                  .take(4)
+                  .map((alert) => _AlertCard(
+                        alert: alert,
+                        en: en,
+                        onReviewed: () =>
+                            repository.markAlertReviewed(alert.id),
+                      )),
               const SizedBox(height: 16),
               Text(
                 L.t(en, 'রোগীর অগ্রাধিকার তালিকা', 'Patient Priority List'),
@@ -959,8 +1025,10 @@ class _CareRow extends StatelessWidget {
 class _AlertCard extends StatelessWidget {
   final DemoAlert alert;
   final bool en;
+  final VoidCallback? onReviewed;
 
-  const _AlertCard({required this.alert, required this.en});
+  const _AlertCard(
+      {required this.alert, required this.en, this.onReviewed});
 
   @override
   Widget build(BuildContext context) {
@@ -986,11 +1054,18 @@ class _AlertCard extends StatelessWidget {
           child:
               Text(alert.message, style: GoogleFonts.nunito(height: 1.35)),
         ),
-        trailing: Text(
-          DateFormat('h:mm a').format(alert.createdAt),
-          style: GoogleFonts.nunito(
-              fontSize: 11, color: const Color(0xFF786B72)),
-        ),
+        trailing: onReviewed != null
+            ? IconButton(
+                tooltip: L.t(en, 'পর্যালোচিত', 'Mark reviewed'),
+                icon: const Icon(Icons.check_circle_outline_rounded,
+                    color: Color(0xFF197A5B)),
+                onPressed: onReviewed,
+              )
+            : Text(
+                DateFormat('h:mm a').format(alert.createdAt),
+                style: GoogleFonts.nunito(
+                    fontSize: 11, color: const Color(0xFF786B72)),
+              ),
       ),
     );
   }
@@ -1033,6 +1108,204 @@ class _ProviderPeekSheet extends StatelessWidget {
   }
 }
 
+// ── Doctor stats strip ────────────────────────────────────────────────────────
+
+class _DoctorStatsStrip extends StatelessWidget {
+  final bool en;
+  final DemoRepository repository;
+
+  const _DoctorStatsStrip({required this.en, required this.repository});
+
+  @override
+  Widget build(BuildContext context) {
+    final patients = repository.providerPatients;
+    final red = patients.where((p) => p.riskLevel == DemoRiskLevel.red).length;
+    final yellow =
+        patients.where((p) => p.riskLevel == DemoRiskLevel.yellow).length;
+    final green =
+        patients.where((p) => p.riskLevel == DemoRiskLevel.green).length;
+
+    return Row(
+      children: [
+        _StatChip(
+          value: '${patients.length}',
+          label: L.t(en, 'মোট', 'Total'),
+          color: const Color(0xFF5D53B7),
+        ),
+        const SizedBox(width: 8),
+        _StatChip(
+          value: '$red',
+          label: L.t(en, 'জরুরি', 'Urgent'),
+          color: const Color(0xFFD1423B),
+        ),
+        const SizedBox(width: 8),
+        _StatChip(
+          value: '$yellow',
+          label: L.t(en, 'নজরে', 'Watch'),
+          color: const Color(0xFFB17616),
+        ),
+        const SizedBox(width: 8),
+        _StatChip(
+          value: '$green',
+          label: L.t(en, 'স্থিতিশীল', 'Stable'),
+          color: const Color(0xFF197A5B),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color color;
+
+  const _StatChip(
+      {required this.value, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.nunito(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Doctor quick actions ──────────────────────────────────────────────────────
+
+class _DoctorQuickActions extends StatelessWidget {
+  final bool en;
+
+  const _DoctorQuickActions({required this.en});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _QuickActionTile(
+          icon: Icons.queue_rounded,
+          label: L.t(en, "আজকের কিউ", "Today's Queue"),
+          color: const Color(0xFF1F2530),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                L.t(en, '৩ জন রোগী আজকের তালিকায়।',
+                    '3 patients in today\'s queue.'),
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _QuickActionTile(
+          icon: Icons.notifications_active_rounded,
+          label: L.t(en, "অপঠিত সতর্কতা", "Unread Alerts"),
+          color: const Color(0xFFD1423B),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                L.t(en, '২টি অপঠিত সতর্কতা আছে।',
+                    '2 unread alerts waiting.'),
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _QuickActionTile(
+          icon: Icons.summarize_rounded,
+          label: L.t(en, "ডে সামারি", "Day Summary"),
+          color: const Color(0xFF0F6E56),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                L.t(en, 'কাল কোনো ফলো-আপ নেই।',
+                    'No follow-ups scheduled tomorrow.'),
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Provider patient card ─────────────────────────────────────────────────────
+
 class _ProviderPatientCard extends StatelessWidget {
   final DemoProviderPatient patient;
   final bool en;
@@ -1049,69 +1322,337 @@ class _ProviderPatientCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => DoctorPatientDetailScreen(patient: patient),
+          ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        patient.name,
+                        style: GoogleFonts.nunito(
+                            fontSize: 16, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        en
+                            ? switch (patient.riskLevel) {
+                                DemoRiskLevel.green => 'Stable',
+                                DemoRiskLevel.yellow => 'Watch',
+                                DemoRiskLevel.red => 'Urgent',
+                              }
+                            : switch (patient.riskLevel) {
+                                DemoRiskLevel.green => 'সবুজ',
+                                DemoRiskLevel.yellow => 'হলুদ',
+                                DemoRiskLevel.red => 'লাল',
+                              },
+                        style: GoogleFonts.nunito(
+                          color: color,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.chevron_right_rounded,
+                        color: const Color(0xFFB0A0A8), size: 20),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  L.t(
+                    en,
+                    '${patient.weeksGestation} সপ্তাহ • BP ${patient.latestBp} • ${patient.daysSinceLog} দিন আগে লগ',
+                    '${patient.weeksGestation} weeks • BP ${patient.latestBp} • logged ${patient.daysSinceLog}d ago',
+                  ),
+                  style:
+                      GoogleFonts.nunito(color: const Color(0xFF655A62)),
+                ),
+                const SizedBox(height: 8),
+                Text(patient.summary,
+                    style: GoogleFonts.nunito(height: 1.4)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Broadcast sheet ───────────────────────────────────────────────────────────
+
+void _showBroadcastSheet(
+    BuildContext context, bool en, DemoRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => _BroadcastSheet(en: en, repository: repository),
+  );
+}
+
+class _BroadcastSheet extends StatefulWidget {
+  final bool en;
+  final DemoRepository repository;
+
+  const _BroadcastSheet({required this.en, required this.repository});
+
+  @override
+  State<_BroadcastSheet> createState() => _BroadcastSheetState();
+}
+
+class _BroadcastSheetState extends State<_BroadcastSheet> {
+  final _controller = TextEditingController();
+  bool _isSending = false;
+  bool _sent = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _isSending = true);
+    await widget.repository.broadcastToAllPatients(text);
+    if (mounted) setState(() { _isSending = false; _sent = true; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final en = widget.en;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            L.t(en, 'সকল রোগীকে বার্তা পাঠান', 'Broadcast to All Patients'),
+            style: GoogleFonts.nunito(
+                fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            L.t(
+              en,
+              'এই বার্তা সকল রোগীর "সাম্প্রতিক সতর্কতা"-তে দেখাবে।',
+              'This message will appear in all patients\' Recent Alerts.',
+            ),
+            style: GoogleFonts.nunito(
+                color: const Color(0xFF675A63), fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          if (_sent)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF4EE),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
                 children: [
+                  const Icon(Icons.check_circle_rounded,
+                      color: Color(0xFF197A5B)),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      patient.name,
+                      L.t(en, 'বার্তা পাঠানো হয়েছে।',
+                          'Broadcast sent successfully.'),
                       style: GoogleFonts.nunito(
-                          fontSize: 16, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      en
-                          ? switch (patient.riskLevel) {
-                              DemoRiskLevel.green => 'Stable',
-                              DemoRiskLevel.yellow => 'Watch',
-                              DemoRiskLevel.red => 'Urgent',
-                            }
-                          : switch (patient.riskLevel) {
-                              DemoRiskLevel.green => 'সবুজ',
-                              DemoRiskLevel.yellow => 'হলুদ',
-                              DemoRiskLevel.red => 'লাল',
-                            },
-                      style: GoogleFonts.nunito(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                      ),
+                          color: const Color(0xFF197A5B),
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                L.t(
+            )
+          else ...[
+            TextField(
+              controller: _controller,
+              maxLines: 3,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: L.t(
                   en,
-                  '${patient.weeksGestation} weeks • BP ${patient.latestBp} • logged ${patient.daysSinceLog}d ago',
-                  '${patient.weeksGestation} সপ্তাহ • BP ${patient.latestBp} • ${patient.daysSinceLog} দিন আগে লগ',
+                  'যেমন: আগামীকাল ক্লিনিক বন্ধ থাকবে।',
+                  'e.g. Clinic will be closed tomorrow.',
                 ),
-                style:
-                    GoogleFonts.nunito(color: const Color(0xFF655A62)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
-              const SizedBox(height: 8),
-              Text(patient.summary,
-                  style: GoogleFonts.nunito(height: 1.4)),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isSending ? null : _send,
+                icon: _isSending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.campaign_rounded),
+                label: Text(
+                  L.t(en, 'পাঠান', 'Send Broadcast'),
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF1F2530),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Schedule chip (horizontal scroll in doctor view) ─────────────────────────
+
+class _ScheduleChip extends StatelessWidget {
+  final DemoAppointment appointment;
+  final bool en;
+
+  const _ScheduleChip({required this.appointment, required this.en});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5D53B7).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+            color: const Color(0xFF5D53B7).withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5D53B7).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  appointment.isOnline
+                      ? L.t(en, 'অনলাইন', 'Online')
+                      : L.t(en, 'সশরীরে', 'In-person'),
+                  style: GoogleFonts.nunito(
+                      fontSize: 10,
+                      color: const Color(0xFF5D53B7),
+                      fontWeight: FontWeight.w800),
+                ),
+              ),
+              if (appointment.vitalsShared) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.share_rounded,
+                    size: 12, color: Color(0xFF197A5B)),
+              ],
             ],
           ),
-        ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appointment.displayName(en),
+                style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.w900, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                appointment.displaySlot(en),
+                style: GoogleFonts.nunito(
+                    fontSize: 11, color: const Color(0xFF786B72)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Vitals nudge banner (mother view) ────────────────────────────────────────
+
+class _VitalsNudgeBanner extends StatelessWidget {
+  final DemoVitalsNudge nudge;
+  final bool en;
+  final DemoRepository repository;
+
+  const _VitalsNudgeBanner(
+      {required this.nudge,
+      required this.en,
+      required this.repository});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5D53B7).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+            color: const Color(0xFF5D53B7).withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.monitor_heart_rounded,
+              color: Color(0xFF5D53B7), size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              nudge.displayMessage(en),
+              style: GoogleFonts.nunito(
+                  color: const Color(0xFF5D53B7),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  height: 1.4),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded,
+                size: 18, color: Color(0xFF5D53B7)),
+            onPressed: () => repository.dismissNudge(nudge.patientId),
+          ),
+        ],
       ),
     );
   }

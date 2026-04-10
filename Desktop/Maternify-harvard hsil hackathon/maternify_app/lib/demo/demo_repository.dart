@@ -37,6 +37,7 @@ class DemoAlert {
   final DateTime createdAt;
   final DemoRiskLevel riskLevel;
   final bool urgent;
+  final bool isReviewed;
 
   const DemoAlert({
     required this.id,
@@ -45,7 +46,18 @@ class DemoAlert {
     required this.createdAt,
     required this.riskLevel,
     this.urgent = false,
+    this.isReviewed = false,
   });
+
+  DemoAlert copyWithReviewed() => DemoAlert(
+        id: id,
+        title: title,
+        message: message,
+        createdAt: createdAt,
+        riskLevel: riskLevel,
+        urgent: urgent,
+        isReviewed: true,
+      );
 }
 
 class DemoProviderPatient {
@@ -106,6 +118,31 @@ class DemoSosResult {
     required this.summary,
     required this.steps,
   });
+}
+
+// ── Doctor / triage-history model ────────────────────────────────────────────
+
+class DemoTriageEvent {
+  final String id;
+  final String inputText;
+  final String tier; // 'red' | 'yellow' | 'green'
+  final String adviceBangla;
+  final String adviceEnglish;
+  final DateTime createdAt;
+  final bool escalationRequired;
+
+  const DemoTriageEvent({
+    required this.id,
+    required this.inputText,
+    required this.tier,
+    required this.adviceBangla,
+    required this.adviceEnglish,
+    required this.createdAt,
+    required this.escalationRequired,
+  });
+
+  String displayAdvice(bool isEnglish) =>
+      isEnglish ? adviceEnglish : adviceBangla;
 }
 
 // ── Specialist & Booking models ──────────────────────────────────────────────
@@ -349,6 +386,83 @@ const _seedSpecialists = <DemoSpecialist>[
   ),
 ];
 
+// ── Doctor-only models ────────────────────────────────────────────────────────
+
+class DemoCareItem {
+  final String id;
+  final String patientId;
+  final String text;
+  final DateTime prescribedAt;
+
+  const DemoCareItem({
+    required this.id,
+    required this.patientId,
+    required this.text,
+    required this.prescribedAt,
+  });
+}
+
+class DemoReferral {
+  final String id;
+  final String patientId;
+  final String specialistNameBn;
+  final String specialistNameEn;
+  final String specialistSpecialtyBn;
+  final String specialistSpecialtyEn;
+  final String reasonBn;
+  final String reasonEn;
+  final DateTime createdAt;
+
+  const DemoReferral({
+    required this.id,
+    required this.patientId,
+    required this.specialistNameBn,
+    required this.specialistNameEn,
+    required this.specialistSpecialtyBn,
+    required this.specialistSpecialtyEn,
+    required this.reasonBn,
+    required this.reasonEn,
+    required this.createdAt,
+  });
+
+  String displayName(bool en) => en ? specialistNameEn : specialistNameBn;
+  String displaySpecialty(bool en) =>
+      en ? specialistSpecialtyEn : specialistSpecialtyBn;
+  String displayReason(bool en) => en ? reasonEn : reasonBn;
+}
+
+class DemoVitalsNudge {
+  final String id;
+  final String patientId;
+  final String messageBn;
+  final String messageEn;
+  final DateTime requestedAt;
+
+  const DemoVitalsNudge({
+    required this.id,
+    required this.patientId,
+    required this.messageBn,
+    required this.messageEn,
+    required this.requestedAt,
+  });
+
+  String displayMessage(bool en) => en ? messageEn : messageBn;
+}
+
+class DemoVitalsAnnotation {
+  final String id;
+  final String patientId;
+  final DateTime loggedAt;
+  final String annotation;
+
+  const DemoVitalsAnnotation({
+    required this.id,
+    required this.patientId,
+    required this.loggedAt,
+    required this.annotation,
+  });
+}
+
 // ── Repository ────────────────────────────────────────────────────────────────
 
 class DemoRepository extends ChangeNotifier {
@@ -385,8 +499,219 @@ class DemoRepository extends ChangeNotifier {
   final List<DemoSpecialist> _specialists = List.of(_seedSpecialists);
   final List<DemoAppointment> _appointments = [];
 
+  // All-patient records (for doctor view)
+  late Map<String, List<VitalsLog>> _allPatientVitals;
+  late Map<String, List<DemoTriageEvent>> _allTriageHistory;
+  late Map<String, String> _allAiSummaries;
+
+  // Doctor features
+  final Map<String, DemoRiskLevel> _overriddenRisks = {};
+  final List<DemoCareItem> _careItems = [];
+  final List<DemoReferral> _referrals = [];
+  final List<DemoVitalsAnnotation> _annotations = [];
+  final List<DemoVitalsNudge> _nudges = [];
+
   List<DemoSpecialist> get specialists => List.unmodifiable(_specialists);
   List<DemoAppointment> get appointments => List.unmodifiable(_appointments);
+
+  List<VitalsLog> getPatientVitals(String patientId) {
+    if (patientId == _motherPatient.id) return vitalsLogs;
+    return _allPatientVitals[patientId] ?? [];
+  }
+
+  List<DemoTriageEvent> getPatientTriageHistory(String patientId) {
+    if (patientId == _motherPatient.id) {
+      return (_allTriageHistory[patientId] ?? []);
+    }
+    return _allTriageHistory[patientId] ?? [];
+  }
+
+  String getPatientAiSummary(String patientId) {
+    return _allAiSummaries[patientId] ?? '';
+  }
+
+  List<DemoCareItem> getCareItems(String patientId) =>
+      _careItems.where((i) => i.patientId == patientId).toList();
+
+  List<DemoReferral> getReferrals(String patientId) =>
+      _referrals.where((r) => r.patientId == patientId).toList();
+
+  DemoVitalsNudge? getNudge(String patientId) {
+    final matches = _nudges.where((n) => n.patientId == patientId).toList();
+    return matches.isEmpty ? null : matches.first;
+  }
+
+  DemoVitalsAnnotation? getAnnotation(String patientId, DateTime loggedAt) {
+    final matches = _annotations
+        .where((a) => a.patientId == patientId && a.loggedAt == loggedAt)
+        .toList();
+    return matches.isEmpty ? null : matches.first;
+  }
+
+  Future<void> addDoctorNote({
+    required String patientId,
+    required String note,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    _alerts = [
+      DemoAlert(
+        id: _uuid.v4(),
+        title: _isEnglish ? 'Note from Clinic' : 'ক্লিনিক থেকে বার্তা',
+        message: note,
+        createdAt: DateTime.now(),
+        riskLevel: DemoRiskLevel.green,
+      ),
+      ..._alerts,
+    ];
+    notifyListeners();
+  }
+
+  Future<void> broadcastToAllPatients(String message) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    _alerts = [
+      DemoAlert(
+        id: _uuid.v4(),
+        title: _isEnglish ? 'Clinic Announcement' : 'ক্লিনিক বিজ্ঞপ্তি',
+        message: message,
+        createdAt: DateTime.now(),
+        riskLevel: DemoRiskLevel.green,
+      ),
+      ..._alerts,
+    ];
+    notifyListeners();
+  }
+
+  Future<void> overridePatientRisk({
+    required String patientId,
+    required DemoRiskLevel newLevel,
+    required String reason,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _overriddenRisks[patientId] = newLevel;
+    if (patientId == _motherPatient.id) {
+      _riskLevel = newLevel;
+    }
+    final levelLabel = _isEnglish
+        ? switch (newLevel) {
+            DemoRiskLevel.green => 'Stable',
+            DemoRiskLevel.yellow => 'Watch Closely',
+            DemoRiskLevel.red => 'Urgent',
+          }
+        : switch (newLevel) {
+            DemoRiskLevel.green => 'স্থিতিশীল',
+            DemoRiskLevel.yellow => 'নজরে রাখুন',
+            DemoRiskLevel.red => 'জরুরি',
+          };
+    _alerts = [
+      DemoAlert(
+        id: _uuid.v4(),
+        title: _isEnglish
+            ? 'Risk Level Updated by Clinic'
+            : 'ক্লিনিক ঝুঁকি স্তর পরিবর্তন করেছে',
+        message: '$levelLabel — $reason',
+        createdAt: DateTime.now(),
+        riskLevel: newLevel,
+      ),
+      ..._alerts,
+    ];
+    _refreshProviderPatients();
+    notifyListeners();
+  }
+
+  Future<void> prescribeCareItem({
+    required String patientId,
+    required String text,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _careItems.insert(
+      0,
+      DemoCareItem(
+        id: _uuid.v4(),
+        patientId: patientId,
+        text: text,
+        prescribedAt: DateTime.now(),
+      ),
+    );
+    notifyListeners();
+  }
+
+  void markAlertReviewed(String alertId) {
+    _alerts = _alerts
+        .map((a) => a.id == alertId ? a.copyWithReviewed() : a)
+        .toList();
+    notifyListeners();
+  }
+
+  Future<void> referToSpecialist({
+    required String patientId,
+    required DemoSpecialist specialist,
+    required String reasonBn,
+    required String reasonEn,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    _referrals.insert(
+      0,
+      DemoReferral(
+        id: _uuid.v4(),
+        patientId: patientId,
+        specialistNameBn: specialist.nameBn,
+        specialistNameEn: specialist.nameEn,
+        specialistSpecialtyBn: specialist.specialtyBn,
+        specialistSpecialtyEn: specialist.specialtyEn,
+        reasonBn: reasonBn,
+        reasonEn: reasonEn,
+        createdAt: DateTime.now(),
+      ),
+    );
+    _alerts = [
+      DemoAlert(
+        id: _uuid.v4(),
+        title: _isEnglish ? 'Referral from Your Clinic' : 'ক্লিনিক রেফারেল',
+        message: _isEnglish
+            ? 'Your doctor has referred you to ${specialist.nameEn} (${specialist.specialtyEn}).'
+            : 'আপনার চিকিৎসক আপনাকে ${specialist.nameBn} (${specialist.specialtyBn})-এর কাছে রেফার করেছেন।',
+        createdAt: DateTime.now(),
+        riskLevel: DemoRiskLevel.yellow,
+      ),
+      ..._alerts,
+    ];
+    notifyListeners();
+  }
+
+  Future<void> requestVitals(String patientId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _nudges.removeWhere((n) => n.patientId == patientId);
+    _nudges.add(DemoVitalsNudge(
+      id: _uuid.v4(),
+      patientId: patientId,
+      messageBn: 'আপনার চিকিৎসক আজকের ভাইটালস লগ করতে বলেছেন।',
+      messageEn: "Your doctor is requesting today's vitals reading.",
+      requestedAt: DateTime.now(),
+    ));
+    notifyListeners();
+  }
+
+  void dismissNudge(String patientId) {
+    _nudges.removeWhere((n) => n.patientId == patientId);
+    notifyListeners();
+  }
+
+  Future<void> annotateReading({
+    required String patientId,
+    required DateTime loggedAt,
+    required String annotation,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _annotations.removeWhere(
+        (a) => a.patientId == patientId && a.loggedAt == loggedAt);
+    _annotations.add(DemoVitalsAnnotation(
+      id: _uuid.v4(),
+      patientId: patientId,
+      loggedAt: loggedAt,
+      annotation: annotation,
+    ));
+    notifyListeners();
+  }
 
   DemoSession? get session => _session;
   Patient get motherPatient => _motherPatient;
@@ -773,6 +1098,29 @@ class DemoRepository extends ChangeNotifier {
     _sosTriggered = false;
     _lastVitalsUpdateAt = null;
     _providerPatients = _seedPatients.map(_providerPatientFromJson).toList();
+
+    // Load all-patient data for doctor view
+    final allRecords =
+        _seedData['patient_records'] as Map<String, dynamic>;
+    _allPatientVitals = {};
+    _allTriageHistory = {};
+    _allAiSummaries = {};
+    for (final entry in allRecords.entries) {
+      final rec = entry.value as Map<String, dynamic>;
+      _allPatientVitals[entry.key] =
+          ((rec['vitals'] as List<dynamic>?) ?? [])
+              .cast<Map<String, dynamic>>()
+              .map(VitalsLog.fromJson)
+              .toList()
+            ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+      _allTriageHistory[entry.key] =
+          ((rec['triage_history'] as List<dynamic>?) ?? [])
+              .cast<Map<String, dynamic>>()
+              .map(_triageEventFromJson)
+              .toList();
+      _allAiSummaries[entry.key] =
+          rec['ai_summary'] as String? ?? '';
+    }
   }
 
   DemoSession _sessionFor({
@@ -850,7 +1198,7 @@ class DemoRepository extends ChangeNotifier {
         id: _motherPatient.id,
         name: _motherPatient.name,
         weeksGestation: _motherPatient.weeksGestation,
-        riskLevel: _riskLevel,
+        riskLevel: _overriddenRisks[_motherPatient.id] ?? _riskLevel,
         latestBp: '${latest.systolicBp}/${latest.diastolicBp}',
         summary: _sosTriggered
             ? (_isEnglish
@@ -859,7 +1207,19 @@ class DemoRepository extends ChangeNotifier {
             : riskSummaryBangla,
         daysSinceLog: 0,
       ),
-      ..._providerPatients.where((patient) => patient.id != _motherPatient.id),
+      ..._providerPatients.where((p) => p.id != _motherPatient.id).map(
+            (p) => _overriddenRisks.containsKey(p.id)
+                ? DemoProviderPatient(
+                    id: p.id,
+                    name: p.name,
+                    weeksGestation: p.weeksGestation,
+                    riskLevel: _overriddenRisks[p.id]!,
+                    latestBp: p.latestBp,
+                    summary: p.summary,
+                    daysSinceLog: p.daysSinceLog,
+                  )
+                : p,
+          ),
     ];
   }
 
@@ -893,6 +1253,18 @@ class DemoRepository extends ChangeNotifier {
       latestBp: '${json['latest_systolic']}/${json['latest_diastolic']}',
       summary: json['summary'] as String? ?? '',
       daysSinceLog: json['days_since_log'] as int? ?? 0,
+    );
+  }
+
+  DemoTriageEvent _triageEventFromJson(Map<String, dynamic> json) {
+    return DemoTriageEvent(
+      id: json['id'] as String,
+      inputText: json['input_text'] as String,
+      tier: json['triage_tier'] as String? ?? 'green',
+      adviceBangla: json['advice_bangla'] as String? ?? '',
+      adviceEnglish: json['advice_english'] as String? ?? '',
+      createdAt: DateTime.parse(json['created_at'] as String),
+      escalationRequired: json['escalation_required'] as bool? ?? false,
     );
   }
 
