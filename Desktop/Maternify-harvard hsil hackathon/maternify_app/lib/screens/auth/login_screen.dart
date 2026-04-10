@@ -221,16 +221,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: const [
-                      _PitchChip(label: 'Personal health record'),
-                      _PitchChip(label: 'Bangla AI triage'),
-                      _PitchChip(label: 'One-tap SOS'),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -398,26 +388,3 @@ class _RoleSegment extends StatelessWidget {
   }
 }
 
-class _PitchChip extends StatelessWidget {
-  final String label;
-
-  const _PitchChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.nunito(
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF5A4650),
-        ),
-      ),
-    );
-  }
-}
