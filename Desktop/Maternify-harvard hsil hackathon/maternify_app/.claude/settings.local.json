@@ -6,7 +6,8 @@
       "Bash(python3 fix2.py)",
       "Bash(del \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix_repo.py\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix2.py\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix2_result.txt\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\char_info.txt\")",
       "Bash(flutter analyze:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(flutter pub:*)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../demo/demo_repository.dart';
@@ -221,6 +222,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  _EmergencyButton(),
                 ],
               ),
             ),
@@ -388,3 +391,254 @@ class _RoleSegment extends StatelessWidget {
   }
 }
 
+class _EmergencyButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const _EmergencySheet(),
+      ),
+      icon: const Icon(
+        Icons.emergency_rounded,
+        size: 18,
+        color: Color(0xFFD1423B),
+      ),
+      label: Text(
+        'Emergency? Get help without signing in',
+        style: GoogleFonts.nunito(
+          color: const Color(0xFFD1423B),
+          fontWeight: FontWeight.w700,
+          fontSize: 13.5,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Color(0xFFD1423B), width: 1.5),
+        backgroundColor: const Color(0xFFD1423B).withValues(alpha: 0.06),
+        foregroundColor: const Color(0xFFD1423B),
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmergencySheet extends StatelessWidget {
+  const _EmergencySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0D0D5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1423B).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.emergency_rounded,
+                  color: Color(0xFFD1423B),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Emergency Contacts',
+                      style: GoogleFonts.nunito(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      'Call immediately — no account needed.',
+                      style: GoogleFonts.nunito(
+                        color: const Color(0xFF655B61),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          _EmergencyContactTile(
+            icon: Icons.local_hospital_rounded,
+            label: 'National Emergency',
+            number: '999',
+            description: 'Police, Fire, Ambulance',
+            color: const Color(0xFFD1423B),
+          ),
+          const SizedBox(height: 12),
+          _EmergencyContactTile(
+            icon: Icons.pregnant_woman_rounded,
+            label: 'Maternal Helpline',
+            number: '16743',
+            description: 'DGHS maternal health hotline',
+            color: const Color(0xFF993556),
+          ),
+          const SizedBox(height: 12),
+          _EmergencyContactTile(
+            icon: Icons.medical_services_rounded,
+            label: 'Health Helpline',
+            number: '16767',
+            description: 'DGHS 24/7 health support',
+            color: const Color(0xFF197A5B),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: const Color(0xFFFFB74D).withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: Color(0xFFB17616), size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Warning signs: heavy bleeding, severe headache, blurred vision, no fetal movement, convulsions.',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12.5,
+                      color: const Color(0xFF7A5210),
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final uri = Uri.parse(
+                'https://www.google.com/maps/search/government+maternal+hospital+near+me',
+              );
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.map_rounded, size: 18),
+            label: Text(
+              'Find Nearest Clinic',
+              style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF197A5B),
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmergencyContactTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String number;
+  final String description;
+  final Color color;
+
+  const _EmergencyContactTile({
+    required this.icon,
+    required this.label,
+    required this.number,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: GoogleFonts.nunito(
+                    color: const Color(0xFF8A7A80),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            number,
+            style: GoogleFonts.nunito(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 22,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
