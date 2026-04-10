@@ -69,165 +69,179 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
         },
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF6F1D3A),
-                Color(0xFF993556),
-                Color(0xFFF7F4F1),
-              ],
-              stops: [0, 0.34, 0.34],
-            ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Maternify',
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bangla-first maternal monitoring for the critical days between clinic visits.',
-                    style: GoogleFonts.nunito(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 14,
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _HeroStatusCard(role: _selectedRole),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
+        child: Column(
+          children: [
+            // ── Dark header — always tall enough to contain its content ──────
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF6F1D3A), Color(0xFF993556)],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Maternify',
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
                         ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Sign in',
-                            style: GoogleFonts.nunito(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Choose your role to continue to your care dashboard.',
-                            style: GoogleFonts.nunito(
-                              color: const Color(0xFF655B61),
-                              fontSize: 13,
-                              height: 1.45,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          _RolePicker(
-                            selectedRole: _selectedRole,
-                            onChanged: (role) {
-                              setState(() {
-                                _selectedRole = role;
-                                _fillAccountDefaults();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.alternate_email_rounded),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Enter your email address.';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Enter a valid email address.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscure,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon:
-                                  const Icon(Icons.lock_outline_rounded),
-                              suffixIcon: IconButton(
-                                onPressed: () =>
-                                    setState(() => _obscure = !_obscure),
-                                icon: Icon(
-                                  _obscure
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Enter your password.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          BlocBuilder<AuthBloc, AuthState>(
-                            builder: (context, state) {
-                              final isLoading = state is AuthLoading;
-                              return ElevatedButton(
-                                onPressed: isLoading ? null : _submit,
-                                child: isLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.2,
-                                        ),
-                                      )
-                                    : Text(
-                                        _selectedRole == DemoRole.mother
-                                            ? 'Continue as Mother'
-                                            : 'Continue as Clinician',
-                                      ),
-                              );
-                            },
-                          ),
-                        ],
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bangla-first maternal monitoring for the critical days between clinic visits.',
+                        style: GoogleFonts.nunito(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _HeroStatusCard(role: _selectedRole),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _EmergencyButton(),
-                ],
+                ),
               ),
             ),
-          ),
+            // ── Light scrollable form section ─────────────────────────────
+            Expanded(
+              child: Container(
+                color: const Color(0xFFF7F4F1),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sign in',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Choose your role to continue to your care dashboard.',
+                                style: GoogleFonts.nunito(
+                                  color: const Color(0xFF655B61),
+                                  fontSize: 13,
+                                  height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              _RolePicker(
+                                selectedRole: _selectedRole,
+                                onChanged: (role) {
+                                  setState(() {
+                                    _selectedRole = role;
+                                    _fillAccountDefaults();
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon:
+                                      Icon(Icons.alternate_email_rounded),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Enter your email address.';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Enter a valid email address.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscure,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon:
+                                      const Icon(Icons.lock_outline_rounded),
+                                  suffixIcon: IconButton(
+                                    onPressed: () =>
+                                        setState(() => _obscure = !_obscure),
+                                    icon: Icon(
+                                      _obscure
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Enter your password.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              BlocBuilder<AuthBloc, AuthState>(
+                                builder: (context, state) {
+                                  final isLoading = state is AuthLoading;
+                                  return ElevatedButton(
+                                    onPressed: isLoading ? null : _submit,
+                                    child: isLoading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2.2,
+                                            ),
+                                          )
+                                        : Text(
+                                            _selectedRole == DemoRole.mother
+                                                ? 'Continue as Mother'
+                                                : 'Continue as Clinician',
+                                          ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _EmergencyButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

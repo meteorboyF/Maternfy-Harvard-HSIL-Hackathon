@@ -236,7 +236,7 @@ class _MotherDashboard extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
+              childAspectRatio: 1.05,
               children: [
                 _ActionTile(
                   title: L.t(en, 'আজকের রিডিং লগ করুন',
@@ -989,7 +989,7 @@ class _ActionTile extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color),
               ),
-              const Spacer(),
+              const SizedBox(height: 10),
               Text(
                 title,
                 style: GoogleFonts.nunito(
@@ -1005,6 +1005,8 @@ class _ActionTile extends StatelessWidget {
                   fontSize: 12.5,
                   color: const Color(0xFF675A63),
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

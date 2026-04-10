@@ -77,18 +77,10 @@ class _SosScreenState extends State<SosScreen>
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 40),
           children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.maybePop(context),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                Text(
-                  L.t(en, 'জরুরি সাহায্য', 'Emergency Help'),
-                  style: GoogleFonts.nunito(
-                      fontSize: 24, fontWeight: FontWeight.w900),
-                ),
-              ],
+            Text(
+              L.t(en, 'জরুরি সাহায্য', 'Emergency Help'),
+              style: GoogleFonts.nunito(
+                  fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 12),
             Container(

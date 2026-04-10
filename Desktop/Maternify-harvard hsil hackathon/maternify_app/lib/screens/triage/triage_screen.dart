@@ -79,31 +79,6 @@ class _TriageScreenState extends State<TriageScreen> {
     final latest = repository.latestVitals;
     final chips = en ? _starterChipsEn : _starterChipsBn;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(L.t(en, 'লক্ষণ বিশ্লেষণ', 'Symptom Analysis')),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _language,
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: const Color(0xFF993556),
-                iconEnabledColor: Colors.white,
-                style: GoogleFonts.nunito(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'bn', child: Text('Bangla')),
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                ],
-                onChanged: (value) => setState(() => _language = value ?? 'bn'),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Column(
         children: [
           Container(
@@ -116,10 +91,33 @@ class _TriageScreenState extends State<TriageScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  L.t(en, 'সাম্প্রতিক স্বাস্থ্য তথ্য', 'Recent Health Context'),
-                  style: GoogleFonts.nunito(
-                      fontSize: 13, fontWeight: FontWeight.w800),
+                Row(
+                  children: [
+                    Text(
+                      L.t(en, 'সাম্প্রতিক স্বাস্থ্য তথ্য', 'Recent Health Context'),
+                      style: GoogleFonts.nunito(
+                          fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
+                    const Spacer(),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _language,
+                        borderRadius: BorderRadius.circular(16),
+                        isDense: true,
+                        style: GoogleFonts.nunito(
+                          color: const Color(0xFF993556),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'bn', child: Text('Bangla')),
+                          DropdownMenuItem(value: 'en', child: Text('English')),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => _language = value ?? 'bn'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(

@@ -190,8 +190,10 @@ class SettingsScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () =>
-                      context.read<AuthBloc>().add(AuthSignOutRequested()),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.read<AuthBloc>().add(AuthSignOutRequested());
+                  },
                   icon: const Icon(Icons.logout_rounded,
                       color: Color(0xFFD1423B)),
                   label: Text(

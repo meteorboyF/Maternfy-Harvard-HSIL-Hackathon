@@ -74,65 +74,68 @@ class _JournalViewState extends State<_JournalView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('মেজাজ জার্নাল'),
-        backgroundColor: const Color(0xFF993556),
-        foregroundColor: Colors.white,
-        leading: const BackButton(),
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(icon: Icon(Icons.edit_note), text: 'লিখুন'),
-            Tab(icon: Icon(Icons.history), text: 'ইতিহাস'),
-          ],
-        ),
-      ),
-      body: BlocConsumer<JournalBloc, JournalState>(
-        listener: (context, state) {
-          if (state is JournalLoaded && state.latest != null) {
-            // Show EPDS nudge if concerning
-            if (state.latest!.epdsConcern) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: const Color(0xFFD32F2F),
-                  duration: const Duration(seconds: 6),
-                  content: const Text(
-                    '💙 আপনার অনুভূতি গুরুত্বপূর্ণ। আপনার ডাক্তারের সাথে কথা বলুন।',
-                  ),
-                  action: SnackBarAction(
-                    label: 'ঠিক আছে',
-                    textColor: Colors.white,
-                    onPressed: () {},
-                  ),
-                ),
-              );
-            }
-          }
-        },
-        builder: (context, state) {
-          return TabBarView(
-            controller: _tabs,
-            children: [
-              _WriteTab(
-                controller: _controller,
-                focusNode: _focusNode,
-                onSubmit: _submit,
-                onPrompt: (p) => setState(() {
-                  _controller.text = p;
-                  _controller.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _controller.text.length));
-                }),
-                isSubmitting: state is JournalSubmitting,
-                latestEntry:
-                    state is JournalLoaded ? state.latest : null,
-              ),
-              _HistoryTab(state: state),
-            ],
-          );
-        },
+      body: Column(
+        children: [
+          Material(
+            color: const Color(0xFF993556),
+            child: TabBar(
+              controller: _tabs,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
+              tabs: const [
+                Tab(icon: Icon(Icons.edit_note), text: 'লিখুন'),
+                Tab(icon: Icon(Icons.history), text: 'ইতিহাস'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: BlocConsumer<JournalBloc, JournalState>(
+              listener: (context, state) {
+                if (state is JournalLoaded && state.latest != null) {
+                  // Show EPDS nudge if concerning
+                  if (state.latest!.epdsConcern) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFFD32F2F),
+                        duration: const Duration(seconds: 6),
+                        content: const Text(
+                          '💙 আপনার অনুভূতি গুরুত্বপূর্ণ। আপনার ডাক্তারের সাথে কথা বলুন।',
+                        ),
+                        action: SnackBarAction(
+                          label: 'ঠিক আছে',
+                          textColor: Colors.white,
+                          onPressed: () {},
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              builder: (context, state) {
+                return TabBarView(
+                  controller: _tabs,
+                  children: [
+                    _WriteTab(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      onSubmit: _submit,
+                      onPrompt: (p) => setState(() {
+                        _controller.text = p;
+                        _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length));
+                      }),
+                      isSubmitting: state is JournalSubmitting,
+                      latestEntry:
+                          state is JournalLoaded ? state.latest : null,
+                    ),
+                    _HistoryTab(state: state),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

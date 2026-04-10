@@ -81,12 +81,6 @@ class _DietaryViewState extends State<_DietaryView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('খাদ্য পরামর্শ'),
-        backgroundColor: const Color(0xFF993556),
-        foregroundColor: Colors.white,
-        leading: const BackButton(),
-      ),
       body: Column(
         children: [
           // Week banner
