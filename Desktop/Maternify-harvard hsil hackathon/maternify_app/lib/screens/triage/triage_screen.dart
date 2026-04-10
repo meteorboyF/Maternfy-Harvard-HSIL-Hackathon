@@ -19,7 +19,6 @@ class _TriageScreenState extends State<TriageScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSubmitting = false;
-  String _language = 'bn';
 
   static const List<String> _starterChipsBn = [
     'মাথা ঘুরছে আর চোখে ঝাপসা দেখছি',
@@ -50,7 +49,7 @@ class _TriageScreenState extends State<TriageScreen> {
       await _repository.submitTriage(
         patientId: widget.patientId,
         text: text,
-        lang: _language,
+        lang: _repository.isEnglish ? 'en' : 'bn',
       );
       _jumpToBottom();
     } finally {
@@ -74,11 +73,21 @@ class _TriageScreenState extends State<TriageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _repository,
+      builder: (context, _) => _buildScaffold(context),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     final repository = _repository;
     final en = repository.isEnglish;
     final latest = repository.latestVitals;
     final chips = en ? _starterChipsEn : _starterChipsBn;
     return Scaffold(
+      appBar: AppBar(
+        title: Text(L.t(en, 'লক্ষণ বিশ্লেষণ', 'Symptom Analysis')),
+      ),
       body: Column(
         children: [
           Container(
@@ -91,33 +100,10 @@ class _TriageScreenState extends State<TriageScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      L.t(en, 'সাম্প্রতিক স্বাস্থ্য তথ্য', 'Recent Health Context'),
-                      style: GoogleFonts.nunito(
-                          fontSize: 13, fontWeight: FontWeight.w800),
-                    ),
-                    const Spacer(),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _language,
-                        borderRadius: BorderRadius.circular(16),
-                        isDense: true,
-                        style: GoogleFonts.nunito(
-                          color: const Color(0xFF993556),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'bn', child: Text('Bangla')),
-                          DropdownMenuItem(value: 'en', child: Text('English')),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _language = value ?? 'bn'),
-                      ),
-                    ),
-                  ],
+                Text(
+                  L.t(en, 'সাম্প্রতিক স্বাস্থ্য তথ্য', 'Recent Health Context'),
+                  style: GoogleFonts.nunito(
+                      fontSize: 13, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -188,9 +174,7 @@ class _TriageScreenState extends State<TriageScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: _submitText,
                       decoration: InputDecoration(
-                        hintText: _language == 'bn'
-                            ? 'লক্ষণ লিখুন... যেমন: মাথা ঘুরছে'
-                            : 'Describe symptoms...',
+                        hintText: L.t(en, 'লক্ষণ লিখুন... যেমন: মাথা ঘুরছে', 'Describe symptoms...'),
                       ),
                     ),
                   ),
@@ -252,7 +236,7 @@ class _ChatBubble extends StatelessWidget {
                 ],
               ),
               child: Text(
-                message.text,
+                message.displayText(DemoRepository.instance.isEnglish),
                 style: GoogleFonts.nunito(
                   fontSize: 14.5,
                   height: 1.45,

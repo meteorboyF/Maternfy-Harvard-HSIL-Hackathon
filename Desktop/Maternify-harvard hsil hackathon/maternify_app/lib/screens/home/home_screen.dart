@@ -1163,7 +1163,7 @@ class _AlertCard extends StatelessWidget {
             child: Icon(
                 alert.urgent ? Icons.notifications_active : Icons.info_outline),
           ),
-          title: Text(alert.title,
+          title: Text(alert.displayTitle(en),
               style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),

@@ -11,7 +11,19 @@
       "Bash(find \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_dashboard\\\\src\\\\app\\\\\\\\\\(dashboard\\)\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
       "Bash(npx tsc:*)",
       "Bash(node \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/node_modules/.bin/tsc\" --noEmit --project \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/tsconfig.json\")",
-      "Bash(node \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/node_modules/typescript/bin/tsc\" --noEmit --project \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/tsconfig.json\")"
+      "Bash(node \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/node_modules/typescript/bin/tsc\" --noEmit --project \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/tsconfig.json\")",
+      "Read(//i/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/**)",
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(git -C \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon\" diff --check)",
+      "Bash(git -C \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon\" status --short)",
+      "Bash(git -C \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon\" add \"maternify_app/lib/screens/triage/triage_screen.dart\" \"maternify_app/lib/screens/journal/journal_screen.dart\" \"maternify_app/lib/screens/dietary/dietary_screen.dart\")",
+      "Bash(GIT_EDITOR=\"true\" git -C \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon\" rebase --continue)",
+      "Bash(git:*)",
+      "Bash(git -C:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Read(//i/maternify/Maternfy-Harvard-HSIL-Hackathon/.git/**)",
+      "Read(//i/maternify/Maternfy-Harvard-HSIL-Hackathon/.git/rebase-merge/**)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

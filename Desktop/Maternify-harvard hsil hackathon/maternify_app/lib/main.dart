@@ -48,14 +48,18 @@ class MaternifyApp extends StatelessWidget {
           Locale('en', 'US'),
           Locale('bn', 'BD'),
         ],
-        home: BlocBuilder<AuthBloc, AuthState>(
+        home: BlocConsumer<AuthBloc, AuthState>(
+          listenWhen: (prev, curr) =>
+              prev is AuthAuthenticated && curr is AuthUnauthenticated,
+          listener: (context, state) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+          },
           builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              return const HomeScreen();
-            }
-            if (state is AuthLoading) {
-              return const _SplashScreen();
-            }
+            if (state is AuthAuthenticated) return const HomeScreen();
+            if (state is AuthLoading) return const _SplashScreen();
             return const LoginScreen();
           },
         ),

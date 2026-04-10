@@ -23,6 +23,7 @@
     {
       "id": "seed-assistant",
       "text": "আপনার সাম্প্রতিক vitals আমি দেখছি। উপসর্গ বাংলা বা English-এ লিখুন, আমি urgency level দেখাব।",
+      "text_en": "I can see your recent vitals. Describe your symptoms in Bangla or English and I will show you the urgency level.",
       "is_user": false,
       "timestamp": "2026-04-10T09:00:00.000Z"
     }

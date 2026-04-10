@@ -50,6 +50,7 @@ class JournalEntry {
   final String responseEnglish;
   final bool epdsConcern;
   final String copingTipBangla;
+  final String copingTipEnglish;
   final DateTime timestamp;
 
   const JournalEntry({
@@ -64,6 +65,7 @@ class JournalEntry {
     required this.responseEnglish,
     required this.epdsConcern,
     required this.copingTipBangla,
+    required this.copingTipEnglish,
     required this.timestamp,
   });
 
@@ -79,6 +81,7 @@ class JournalEntry {
         responseEnglish: json['response_english'] as String? ?? '',
         epdsConcern: json['epds_concern'] as bool? ?? false,
         copingTipBangla: json['coping_tip_bangla'] as String? ?? '',
+        copingTipEnglish: json['coping_tip_english'] as String? ?? '',
         timestamp: json['sent_at'] != null
             ? DateTime.parse(json['sent_at'] as String)
             : DateTime.now(),

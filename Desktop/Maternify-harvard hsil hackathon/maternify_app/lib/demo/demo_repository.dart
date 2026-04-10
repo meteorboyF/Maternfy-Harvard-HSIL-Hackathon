@@ -43,7 +43,9 @@ enum DemoAlertType {
 
 class DemoAlert {
   final String id;
-  final String title;
+  final String title;    // Bangla
+  final String titleEn;  // English
+  final String? patientId; // null = broadcast / global
   final String message;
   final DateTime createdAt;
   final DemoRiskLevel riskLevel;
@@ -54,17 +56,23 @@ class DemoAlert {
   const DemoAlert({
     required this.id,
     required this.title,
+    required this.titleEn,
     required this.message,
     required this.createdAt,
     required this.riskLevel,
+    this.patientId,
     this.urgent = false,
     this.isReviewed = false,
     this.alertType = DemoAlertType.general,
   });
 
+  String displayTitle(bool isEnglish) => isEnglish ? titleEn : title;
+
   DemoAlert copyWithReviewed() => DemoAlert(
         id: id,
         title: title,
+        titleEn: titleEn,
+        patientId: patientId,
         message: message,
         createdAt: createdAt,
         riskLevel: riskLevel,
@@ -96,7 +104,8 @@ class DemoProviderPatient {
 
 class DemoChatMessage {
   final String id;
-  final String text;
+  final String text;     // Bangla
+  final String? textEn;  // English (null = use text as-is)
   final bool isUser;
   final DateTime timestamp;
   final TriageTier? tier;
@@ -107,9 +116,13 @@ class DemoChatMessage {
     required this.text,
     required this.isUser,
     required this.timestamp,
+    this.textEn,
     this.tier,
     this.escalationRequired = false,
   });
+
+  String displayText(bool isEnglish) =>
+      isEnglish && textEn != null ? textEn! : text;
 }
 
 class DemoTriageResponse {
@@ -604,7 +617,9 @@ class DemoRepository extends ChangeNotifier {
     _alerts = [
       DemoAlert(
         id: _uuid.v4(),
-        title: _isEnglish ? 'Note from Clinic' : 'ক্লিনিক থেকে বার্তা',
+        title: 'ক্লিনিক থেকে বার্তা',
+        titleEn: 'Note from Clinic',
+        patientId: patientId,
         message: note,
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.green,
@@ -621,7 +636,9 @@ class DemoRepository extends ChangeNotifier {
     _alerts = [
       DemoAlert(
         id: _uuid.v4(),
-        title: _isEnglish ? 'Clinic Announcement' : 'ক্লিনিক বিজ্ঞপ্তি',
+        title: 'ক্লিনিক বিজ্ঞপ্তি',
+        titleEn: 'Clinic Announcement',
+        // patientId omitted — broadcast to all
         message: message,
         createdAt: DateTime.now(),
         riskLevel: DemoRiskLevel.green,
@@ -643,24 +660,23 @@ class DemoRepository extends ChangeNotifier {
     if (patientId == _motherPatient.id) {
       _riskLevel = newLevel;
     }
-    final levelLabel = _isEnglish
-        ? switch (newLevel) {
-            DemoRiskLevel.green => 'Stable',
-            DemoRiskLevel.yellow => 'Watch Closely',
-            DemoRiskLevel.red => 'Urgent',
-          }
-        : switch (newLevel) {
-            DemoRiskLevel.green => 'স্থিতিশীল',
-            DemoRiskLevel.yellow => 'নজরে রাখুন',
-            DemoRiskLevel.red => 'জরুরি',
-          };
+    final levelLabelBn = switch (newLevel) {
+      DemoRiskLevel.green => 'স্থিতিশীল',
+      DemoRiskLevel.yellow => 'নজরে রাখুন',
+      DemoRiskLevel.red => 'জরুরি',
+    };
+    final levelLabelEn = switch (newLevel) {
+      DemoRiskLevel.green => 'Stable',
+      DemoRiskLevel.yellow => 'Watch Closely',
+      DemoRiskLevel.red => 'Urgent',
+    };
     _alerts = [
       DemoAlert(
         id: _uuid.v4(),
-        title: _isEnglish
-            ? 'Risk Level Updated by Clinic'
-            : 'ক্লিনিক ঝুঁকি স্তর পরিবর্তন করেছে',
-        message: '$levelLabel — $reason',
+        title: 'ক্লিনিক ঝুঁকি স্তর পরিবর্তন করেছে',
+        titleEn: 'Risk Level Updated by Clinic',
+        patientId: patientId,
+        message: _isEnglish ? '$levelLabelEn — $reason' : '$levelLabelBn — $reason',
         createdAt: DateTime.now(),
         riskLevel: newLevel,
         alertType: DemoAlertType.riskUpdate,
@@ -720,7 +736,9 @@ class DemoRepository extends ChangeNotifier {
     _alerts = [
       DemoAlert(
         id: _uuid.v4(),
-        title: _isEnglish ? 'Referral from Your Clinic' : 'ক্লিনিক রেফারেল',
+        title: 'ক্লিনিক রেফারেল',
+        titleEn: 'Referral from Your Clinic',
+        patientId: patientId,
         message: _isEnglish
             ? 'Your doctor has referred you to ${specialist.nameEn} (${specialist.specialtyEn}).'
             : 'আপনার চিকিৎসক আপনাকে ${specialist.nameBn} (${specialist.specialtyBn})-এর কাছে রেফার করেছেন।',
@@ -822,13 +840,14 @@ class DemoRepository extends ChangeNotifier {
       ));
     }
 
-    // Alerts (clinic notes, broadcasts, referrals, risk updates, SOS, etc.)
-    for (final a in _alerts) {
+    // Alerts — only include those belonging to this patient or broadcasts (patientId == null)
+    for (final a in _alerts.where(
+        (a) => a.patientId == null || a.patientId == patientId)) {
       entries.add(DemoTimelineEntry(
         id: 'a-${a.id}',
         type: 'alert',
         titleBn: a.title,
-        titleEn: a.title,
+        titleEn: a.titleEn,
         subtitleBn: a.message,
         subtitleEn: a.message,
         timestamp: a.createdAt,
@@ -1072,31 +1091,30 @@ class DemoRepository extends ChangeNotifier {
     final latest = latestVitals;
     final message = DemoChatMessage(
       id: _uuid.v4(),
-      text: _isEnglish
-          ? switch (tier) {
-              TriageTier.red =>
-                'This is an urgent situation. Your latest BP is '
-                    '${latest.systolicBp}/${latest.diastolicBp} mmHg and kick count is '
-                    '${latest.kickCount} — these symptoms are concerning together. '
-                    'Go to the nearest hospital now, do not be alone, and press SOS.',
-              TriageTier.yellow =>
-                'Based on today\'s symptoms and recent readings, please contact '
-                    'your clinic within 24 hours. Measure BP again, rest, and seek '
-                    'urgent care if symptoms worsen.',
-              TriageTier.green =>
-                'No immediate warning signs right now. Rest, stay hydrated, '
-                    'and let us know if you experience dizziness, blurred vision, '
-                    'abdominal pain, or reduced fetal movement.',
-            }
-          : switch (tier) {
-              TriageTier.red =>
-                'এটি জরুরি অবস্থা। আপনার সর্বশেষ BP ${latest.systolicBp}/${latest.diastolicBp} mmHg এবং কিক কাউন্ট ${latest.kickCount} দেখে এই লক্ষণগুলো উদ্বেগজনক। '
-                    'এখনই নিকটস্থ হাসপাতালে যান, একা থাকবেন না, এবং SOS চাপুন।',
-              TriageTier.yellow =>
-                'আজকের লক্ষণ এবং সাম্প্রতিক রিডিং দেখে ২৪ ঘণ্টার মধ্যে ক্লিনিকে যোগাযোগ করুন। আবার BP মাপুন, বিশ্রাম নিন, এবং লক্ষণ বাড়লে জরুরি সহায়তা নিন।',
-              TriageTier.green =>
-                'এখনই জরুরি সংকেত দেখা যাচ্ছে না। বিশ্রাম নিন, পানি পান করুন, এবং মাথা ঘোরা, ঝাপসা দেখা, পেটব্যথা বা কিক কম হলে আবার জানান।',
-            },
+      text: switch (tier) {
+        TriageTier.red =>
+          'এটি জরুরি অবস্থা। আপনার সর্বশেষ BP ${latest.systolicBp}/${latest.diastolicBp} mmHg এবং কিক কাউন্ট ${latest.kickCount} দেখে এই লক্ষণগুলো উদ্বেগজনক। '
+              'এখনই নিকটস্থ হাসপাতালে যান, একা থাকবেন না, এবং SOS চাপুন।',
+        TriageTier.yellow =>
+          'আজকের লক্ষণ এবং সাম্প্রতিক রিডিং দেখে ২৪ ঘণ্টার মধ্যে ক্লিনিকে যোগাযোগ করুন। আবার BP মাপুন, বিশ্রাম নিন, এবং লক্ষণ বাড়লে জরুরি সহায়তা নিন।',
+        TriageTier.green =>
+          'এখনই জরুরি সংকেত দেখা যাচ্ছে না। বিশ্রাম নিন, পানি পান করুন, এবং মাথা ঘোরা, ঝাপসা দেখা, পেটব্যথা বা কিক কম হলে আবার জানান।',
+      },
+      textEn: switch (tier) {
+        TriageTier.red =>
+          'This is an urgent situation. Your latest BP is '
+              '${latest.systolicBp}/${latest.diastolicBp} mmHg and kick count is '
+              '${latest.kickCount} — these symptoms are concerning together. '
+              'Go to the nearest hospital now, do not be alone, and press SOS.',
+        TriageTier.yellow =>
+          'Based on today\'s symptoms and recent readings, please contact '
+              'your clinic within 24 hours. Measure BP again, rest, and seek '
+              'urgent care if symptoms worsen.',
+        TriageTier.green =>
+          'No immediate warning signs right now. Rest, stay hydrated, '
+              'and let us know if you experience dizziness, blurred vision, '
+              'abdominal pain, or reduced fetal movement.',
+      },
       isUser: false,
       timestamp: DateTime.now(),
       tier: tier,
@@ -1119,7 +1137,9 @@ class DemoRepository extends ChangeNotifier {
       _alerts = [
         DemoAlert(
           id: _uuid.v4(),
-          title: _isEnglish ? 'Urgent Symptom Alert' : 'জরুরি লক্ষণ সতর্কতা',
+          title: 'জরুরি লক্ষণ সতর্কতা',
+          titleEn: 'Urgent Symptom Alert',
+          patientId: _motherPatient.id,
           message: _isEnglish
               ? '${_motherPatient.name} reported dizziness and blurred vision. Clinic team has been flagged for immediate review.'
               : '${_motherPatient.name} মাথা ঘোরা ও ঝাপসা দেখার লক্ষণ জানিয়েছেন। ক্লিনিক টিমকে তাৎক্ষণিক পর্যালোচনার জন্য সতর্ক করা হয়েছে।',
@@ -1142,7 +1162,9 @@ class DemoRepository extends ChangeNotifier {
     _alerts = [
       DemoAlert(
         id: _uuid.v4(),
-        title: _isEnglish ? 'SOS Dispatched' : 'SOS পাঠানো হয়েছে',
+        title: 'SOS পাঠানো হয়েছে',
+        titleEn: 'SOS Dispatched',
+        patientId: _motherPatient.id,
         message: _isEnglish
             ? 'Emergency information sent to the clinic team and emergency contact.'
             : 'জরুরি তথ্য ক্লিনিক টিম এবং পরিবারের পরিচিতিতে পাঠানো হয়েছে।',
@@ -1244,6 +1266,7 @@ class DemoRepository extends ChangeNotifier {
           (item) => DemoChatMessage(
             id: item['id'] as String,
             text: item['text'] as String,
+            textEn: item['text_en'] as String?,
             isUser: item['is_user'] as bool,
             timestamp: DateTime.parse(item['timestamp'] as String),
           ),
@@ -1312,7 +1335,9 @@ class DemoRepository extends ChangeNotifier {
       _alerts = [
         DemoAlert(
           id: _uuid.v4(),
-          title: _isEnglish ? 'Critical Reading Recorded' : 'জরুরি রিডিং লগ হয়েছে',
+          title: 'জরুরি রিডিং লগ হয়েছে',
+          titleEn: 'Critical Reading Recorded',
+          patientId: _motherPatient.id,
           message: _isEnglish
               ? 'BP ${log.systolicBp}/${log.diastolicBp} and kick count ${log.kickCount} recorded. Clinic team has been alerted.'
               : 'BP ${log.systolicBp}/${log.diastolicBp} এবং কিক কাউন্ট ${log.kickCount} রিডিং রেকর্ড হয়েছে। ক্লিনিক টিমকে সতর্ক করা হয়েছে।',
@@ -1330,7 +1355,9 @@ class DemoRepository extends ChangeNotifier {
       _alerts = [
         DemoAlert(
           id: _uuid.v4(),
-          title: _isEnglish ? 'Reading Updated' : 'রিডিং আপডেট হয়েছে',
+          title: 'রিডিং আপডেট হয়েছে',
+          titleEn: 'Reading Updated',
+          patientId: _motherPatient.id,
           message: _isEnglish
               ? 'New reading saved. Your clinic team can now see your latest data.'
               : 'নতুন রিডিং সেভ হয়েছে। ক্লিনিক টিম আপনার তথ্য দেখতে পারছেন।',
@@ -1392,10 +1419,18 @@ class DemoRepository extends ChangeNotifier {
       'kick_count_low' => 'কিক কাউন্ট স্বাভাবিকের চেয়ে কম',
       _ => 'স্বাস্থ্য সতর্কতা',
     };
+    final titleEn = switch (alertType) {
+      'red_triage' => 'Urgent Symptom Alert',
+      'sos_active' => 'SOS Dispatched',
+      'kick_count_low' => 'Low Kick Count',
+      _ => 'Health Alert',
+    };
 
     return DemoAlert(
       id: json['id'] as String,
       title: title,
+      titleEn: titleEn,
+      patientId: json['patient_id'] as String?,
       message: json['message'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       riskLevel: _riskFromString(

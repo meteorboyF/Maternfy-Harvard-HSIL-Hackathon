@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/journal/journal_bloc.dart';
+import '../../demo/demo_repository.dart';
+import '../../utils/l10n.dart';
 
 // ─── Quick mood prompts ───────────────────────────────────────────────────────
 
@@ -11,6 +13,14 @@ const _prompts = [
   'শিশুর নড়াচড়া অনুভব করে খুশি...',
   'উদ্বেগ লাগছে কারণ...',
   'পরিবারের সাথে সময় কাটিয়ে ভালো লাগল...',
+];
+
+const _promptsEn = [
+  'Today I feel...',
+  'Feeling a little tired today...',
+  'Happy to feel the baby moving...',
+  'Feeling anxious because...',
+  'Enjoyed spending time with family...',
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -73,70 +83,77 @@ class _JournalViewState extends State<_JournalView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          Material(
-            color: const Color(0xFF993556),
-            child: TabBar(
+    return AnimatedBuilder(
+      animation: DemoRepository.instance,
+      builder: (context, _) {
+        final en = DemoRepository.instance.isEnglish;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(L.t(en, 'মেজাজ জার্নাল', 'Mood Journal')),
+            backgroundColor: const Color(0xFF993556),
+            foregroundColor: Colors.white,
+            leading: const BackButton(),
+            bottom: TabBar(
               controller: _tabs,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: Colors.white,
-              tabs: const [
-                Tab(icon: Icon(Icons.edit_note), text: 'লিখুন'),
-                Tab(icon: Icon(Icons.history), text: 'ইতিহাস'),
+
+              tabs: [
+                Tab(icon: const Icon(Icons.edit_note), text: L.t(en, 'লিখুন', 'Write')),
+                Tab(icon: const Icon(Icons.history), text: L.t(en, 'ইতিহাস', 'History')),
               ],
             ),
           ),
-          Expanded(
-            child: BlocConsumer<JournalBloc, JournalState>(
-              listener: (context, state) {
-                if (state is JournalLoaded && state.latest != null) {
-                  // Show EPDS nudge if concerning
-                  if (state.latest!.epdsConcern) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: const Color(0xFFD32F2F),
-                        duration: const Duration(seconds: 6),
-                        content: const Text(
+          body: BlocConsumer<JournalBloc, JournalState>(
+            listener: (context, state) {
+              if (state is JournalLoaded && state.latest != null) {
+                if (state.latest!.epdsConcern) {
+                  final isEn = DemoRepository.instance.isEnglish;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: const Color(0xFFD32F2F),
+                      duration: const Duration(seconds: 6),
+                      content: Text(
+                        L.t(isEn,
                           '💙 আপনার অনুভূতি গুরুত্বপূর্ণ। আপনার ডাক্তারের সাথে কথা বলুন।',
-                        ),
-                        action: SnackBarAction(
-                          label: 'ঠিক আছে',
-                          textColor: Colors.white,
-                          onPressed: () {},
-                        ),
+                          '💙 Your feelings matter. Please speak with your doctor.'),
                       ),
-                    );
-                  }
-                }
-              },
-              builder: (context, state) {
-                return TabBarView(
-                  controller: _tabs,
-                  children: [
-                    _WriteTab(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      onSubmit: _submit,
-                      onPrompt: (p) => setState(() {
-                        _controller.text = p;
-                        _controller.selection = TextSelection.fromPosition(
-                            TextPosition(offset: _controller.text.length));
-                      }),
-                      isSubmitting: state is JournalSubmitting,
-                      latestEntry:
-                          state is JournalLoaded ? state.latest : null,
+                      action: SnackBarAction(
+                        label: L.t(isEn, 'ঠিক আছে', 'OK'),
+                        textColor: Colors.white,
+                        onPressed: () {},
+                      ),
                     ),
-                    _HistoryTab(state: state),
-                  ],
-                );
-              },
-            ),
+                  );
+                }
+              }
+            },
+            builder: (context, state) {
+              return TabBarView(
+                controller: _tabs,
+                children: [
+                  _WriteTab(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    onSubmit: _submit,
+                    onPrompt: (p) => setState(() {
+                      _controller.text = p;
+                      _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length));
+                    }),
+                    isSubmitting: state is JournalSubmitting,
+                    latestEntry:
+                        state is JournalLoaded ? state.latest : null,
+                    en: en,
+                  ),
+                  _HistoryTab(state: state, en: en),
+                ],
+              );
+            },
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -150,6 +167,7 @@ class _WriteTab extends StatelessWidget {
   final ValueChanged<String> onPrompt;
   final bool isSubmitting;
   final JournalEntry? latestEntry;
+  final bool en;
 
   const _WriteTab({
     required this.controller,
@@ -157,11 +175,13 @@ class _WriteTab extends StatelessWidget {
     required this.onSubmit,
     required this.onPrompt,
     required this.isSubmitting,
+    required this.en,
     this.latestEntry,
   });
 
   @override
   Widget build(BuildContext context) {
+    final prompts = en ? _promptsEn : _prompts;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -194,10 +214,12 @@ class _WriteTab extends StatelessWidget {
               focusNode: focusNode,
               maxLines: 7,
               minLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'আজকের অনুভূতি লিখুন... আপনি কেমন আছেন?',
+              decoration: InputDecoration(
+                hintText: L.t(en,
+                  'আজকের অনুভূতি লিখুন... আপনি কেমন আছেন?',
+                  'Write today\'s feelings... how are you?'),
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
+                hintStyle: const TextStyle(color: Colors.black38, fontSize: 15),
               ),
               style: const TextStyle(fontSize: 15, height: 1.6),
             ),
@@ -208,7 +230,7 @@ class _WriteTab extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: _prompts
+            children: prompts
                 .map((p) => ActionChip(
                       label: Text(p,
                           style: const TextStyle(
@@ -238,7 +260,9 @@ class _WriteTab extends StatelessWidget {
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.psychology, color: Colors.white),
             label: Text(
-              isSubmitting ? 'বিশ্লেষণ হচ্ছে...' : 'AI বিশ্লেষণ করুন',
+              L.t(en,
+                isSubmitting ? 'বিশ্লেষণ হচ্ছে...' : 'AI বিশ্লেষণ করুন',
+                isSubmitting ? 'Analysing...' : 'Analyse with AI'),
               style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -249,7 +273,7 @@ class _WriteTab extends StatelessWidget {
           // Latest analysis response card
           if (latestEntry != null) ...[
             const SizedBox(height: 20),
-            _ResponseCard(entry: latestEntry!),
+            _ResponseCard(entry: latestEntry!, en: en),
           ],
         ],
       ),
@@ -261,10 +285,12 @@ class _WriteTab extends StatelessWidget {
 
 class _ResponseCard extends StatelessWidget {
   final JournalEntry entry;
-  const _ResponseCard({required this.entry});
+  final bool en;
+  const _ResponseCard({required this.entry, required this.en});
 
   @override
   Widget build(BuildContext context) {
+    final copingTip = en ? entry.copingTipEnglish : entry.copingTipBangla;
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -278,22 +304,13 @@ class _ResponseCard extends StatelessWidget {
               children: [
                 Text(entry.moodEmoji, style: const TextStyle(fontSize: 28)),
                 const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _moodLabelBangla(entry.moodLabel),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    Text(
-                      entry.moodLabel,
-                      style: const TextStyle(
-                          color: Colors.black45, fontSize: 12),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    _moodLabel(en, entry.moodLabel),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
                 ),
-                const Spacer(),
                 // Mood score gauge
                 _MoodScoreChip(score: entry.moodScore, color: entry.moodColor),
               ],
@@ -316,29 +333,23 @@ class _ResponseCard extends StatelessWidget {
             const SizedBox(height: 12),
 
             // AI supportive response
-            const Row(
+            Row(
               children: [
-                Icon(Icons.favorite, color: Color(0xFF993556), size: 16),
-                SizedBox(width: 6),
-                Text('Maternify বলছে',
-                    style: TextStyle(
+                const Icon(Icons.favorite, color: Color(0xFF993556), size: 16),
+                const SizedBox(width: 6),
+                Text(L.t(en, 'Maternify বলছে', 'Maternify says'),
+                    style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              entry.responseBangla,
+              en ? entry.responseEnglish : entry.responseBangla,
               style: const TextStyle(fontSize: 14, height: 1.6),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              entry.responseEnglish,
-              style: const TextStyle(
-                  fontSize: 12, color: Colors.black45, height: 1.4),
             ),
 
             // Coping tip
-            if (entry.copingTipBangla.isNotEmpty) ...[
+            if (copingTip.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -353,7 +364,7 @@ class _ResponseCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        entry.copingTipBangla,
+                        copingTip,
                         style: const TextStyle(
                             fontSize: 13, color: Color(0xFF1B5E20)),
                       ),
@@ -392,15 +403,17 @@ class _ResponseCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFEF9A9A)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline,
+                    const Icon(Icons.info_outline,
                         color: Color(0xFFD32F2F), size: 18),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'আপনার ডাক্তারের সাথে এই অনুভূতি নিয়ে কথা বলুন।',
-                        style: TextStyle(
+                        L.t(en,
+                          'আপনার ডাক্তারের সাথে এই অনুভূতি নিয়ে কথা বলুন।',
+                          'Please discuss these feelings with your doctor.'),
+                        style: const TextStyle(
                             fontSize: 12, color: Color(0xFFC62828)),
                       ),
                     ),
@@ -414,17 +427,19 @@ class _ResponseCard extends StatelessWidget {
     );
   }
 
-  String _moodLabelBangla(String label) => switch (label) {
-        'joyful' => 'আনন্দিত',
-        'content' => 'সন্তুষ্ট',
-        'anxious' => 'উদ্বিগ্ন',
-        'sad' => 'দুঃখিত',
-        'overwhelmed' => 'অভিভূত',
-        'fearful' => 'ভীত',
-        'angry' => 'রাগান্বিত',
-        'hopeful' => 'আশাবাদী',
-        _ => label,
-      };
+  String _moodLabel(bool isEn, String label) => isEn
+      ? label
+      : switch (label) {
+          'joyful' => 'আনন্দিত',
+          'content' => 'সন্তুষ্ট',
+          'anxious' => 'উদ্বিগ্ন',
+          'sad' => 'দুঃখিত',
+          'overwhelmed' => 'অভিভূত',
+          'fearful' => 'ভীত',
+          'angry' => 'রাগান্বিত',
+          'hopeful' => 'আশাবাদী',
+          _ => label,
+        };
 }
 
 class _MoodScoreChip extends StatelessWidget {
@@ -454,7 +469,8 @@ class _MoodScoreChip extends StatelessWidget {
 
 class _HistoryTab extends StatelessWidget {
   final JournalState state;
-  const _HistoryTab({required this.state});
+  final bool en;
+  const _HistoryTab({required this.state, required this.en});
 
   @override
   Widget build(BuildContext context) {
@@ -470,16 +486,18 @@ class _HistoryTab extends StatelessWidget {
     };
 
     if (history.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('📖', style: TextStyle(fontSize: 48)),
-            SizedBox(height: 12),
+            const Text('📖', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
             Text(
-              'এখনো কোনো জার্নাল নেই।\nপ্রথম এন্ট্রি লিখুন!',
+              L.t(en,
+                'এখনো কোনো জার্নাল নেই।\nপ্রথম এন্ট্রি লিখুন!',
+                'No journal entries yet.\nWrite your first entry!'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54, fontSize: 15),
+              style: const TextStyle(color: Colors.black54, fontSize: 15),
             ),
           ],
         ),
@@ -489,13 +507,13 @@ class _HistoryTab extends StatelessWidget {
     // Mood trend summary strip
     return Column(
       children: [
-        if (history.length >= 3) _MoodTrendStrip(history: history),
+        if (history.length >= 3) _MoodTrendStrip(history: history, en: en),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: history.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) => _HistoryCard(entry: history[i]),
+            itemBuilder: (_, i) => _HistoryCard(entry: history[i], en: en),
           ),
         ),
       ],
@@ -507,7 +525,8 @@ class _HistoryTab extends StatelessWidget {
 
 class _MoodTrendStrip extends StatelessWidget {
   final List<JournalEntry> history;
-  const _MoodTrendStrip({required this.history});
+  final bool en;
+  const _MoodTrendStrip({required this.history, required this.en});
 
   @override
   Widget build(BuildContext context) {
@@ -523,7 +542,7 @@ class _MoodTrendStrip extends StatelessWidget {
           const Text('📊', style: TextStyle(fontSize: 18)),
           const SizedBox(width: 8),
           Text(
-            'গড় মেজাজ: ${avg.toStringAsFixed(1)} / 10',
+            '${L.t(en, 'গড় মেজাজ:', 'Avg mood:')} ${avg.toStringAsFixed(1)} / 10',
             style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Color(0xFFAD1457),
@@ -545,7 +564,8 @@ class _MoodTrendStrip extends StatelessWidget {
 
 class _HistoryCard extends StatelessWidget {
   final JournalEntry entry;
-  const _HistoryCard({required this.entry});
+  final bool en;
+  const _HistoryCard({required this.entry, required this.en});
 
   @override
   Widget build(BuildContext context) {
@@ -569,7 +589,7 @@ class _HistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _moodLabelBangla(entry.moodLabel),
+                        _moodLabel(en, entry.moodLabel),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 13),
                       ),
@@ -614,16 +634,20 @@ class _HistoryCard extends StatelessWidget {
               ),
             ],
             if (entry.epdsConcern)
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber,
+                    const Icon(Icons.warning_amber,
                         size: 14, color: Color(0xFFD32F2F)),
-                    SizedBox(width: 4),
-                    Text('মানসিক স্বাস্থ্য পরামর্শ প্রয়োজন',
-                        style: TextStyle(
-                            fontSize: 11, color: Color(0xFFD32F2F))),
+                    const SizedBox(width: 4),
+                    Text(
+                      L.t(en,
+                        'মানসিক স্বাস্থ্য পরামর্শ প্রয়োজন',
+                        'Mental health support recommended'),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFFD32F2F)),
+                    ),
                   ],
                 ),
               ),
@@ -633,15 +657,17 @@ class _HistoryCard extends StatelessWidget {
     );
   }
 
-  String _moodLabelBangla(String label) => switch (label) {
-        'joyful' => 'আনন্দিত',
-        'content' => 'সন্তুষ্ট',
-        'anxious' => 'উদ্বিগ্ন',
-        'sad' => 'দুঃখিত',
-        'overwhelmed' => 'অভিভূত',
-        'fearful' => 'ভীত',
-        'angry' => 'রাগান্বিত',
-        'hopeful' => 'আশাবাদী',
-        _ => label,
-      };
+  String _moodLabel(bool isEn, String label) => isEn
+      ? label
+      : switch (label) {
+          'joyful' => 'আনন্দিত',
+          'content' => 'সন্তুষ্ট',
+          'anxious' => 'উদ্বিগ্ন',
+          'sad' => 'দুঃখিত',
+          'overwhelmed' => 'অভিভূত',
+          'fearful' => 'ভীত',
+          'angry' => 'রাগান্বিত',
+          'hopeful' => 'আশাবাদী',
+          _ => label,
+        };
 }
