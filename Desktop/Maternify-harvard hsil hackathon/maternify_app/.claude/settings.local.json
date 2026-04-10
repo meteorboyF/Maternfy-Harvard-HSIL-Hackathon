@@ -7,7 +7,11 @@
       "Bash(del \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix_repo.py\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix2.py\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\fix2_result.txt\" \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_app\\\\char_info.txt\")",
       "Bash(flutter analyze:*)",
       "Bash(flutter build:*)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(find \"I:\\\\maternify\\\\Maternfy-Harvard-HSIL-Hackathon\\\\Desktop\\\\Maternify-harvard hsil hackathon\\\\maternify_dashboard\\\\src\\\\app\\\\\\\\\\(dashboard\\)\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(npx tsc:*)",
+      "Bash(node \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/node_modules/.bin/tsc\" --noEmit --project \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/tsconfig.json\")",
+      "Bash(node \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/node_modules/typescript/bin/tsc\" --noEmit --project \"I:/maternify/Maternfy-Harvard-HSIL-Hackathon/Desktop/Maternify-harvard hsil hackathon/maternify_dashboard/tsconfig.json\")"
     ]
   }
 }

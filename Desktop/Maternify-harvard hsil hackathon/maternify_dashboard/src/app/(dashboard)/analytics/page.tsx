@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { format, subDays, eachDayOfInterval } from 'date-fns'
 import { AnalyticsCharts } from '@/components/analytics/AnalyticsCharts'
+import { getDemoPatients, getDemoAlerts } from '@/lib/demo-data'
 import type {
   VitalsTrendPoint,
   TierCount,
@@ -8,6 +9,96 @@ import type {
   AlertVolumePoint,
   TopRiskPatient,
 } from '@/components/analytics/AnalyticsCharts'
+
+// ── Demo fallback — builds analytics from seed JSON when Supabase is empty ─
+function buildDemoAnalytics() {
+  const demoPatients = getDemoPatients()
+  const demoAlerts   = getDemoAlerts()
+
+  // Collect all vitals from seed via demo-data helper (import seed directly)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const seed = require('../../../maternify_app/assets/demo/demo_seed.json') as {
+    patient_records: Record<string, { vitals: Array<{ systolic_bp: number; diastolic_bp: number; logged_at: string }>; triage_history: Array<{ triage_tier: string; patient_id: string }> }>
+  }
+
+  const allVitals = Object.values(seed.patient_records).flatMap((r) => r.vitals)
+  const allTriage = Object.values(seed.patient_records).flatMap((r) => r.triage_history)
+
+  // 1. Vitals trend
+  const now  = new Date()
+  const days = eachDayOfInterval({ start: subDays(now, 13), end: now })
+  const vitalsByDay: Record<string, { sum_s: number; sum_d: number; n: number }> = {}
+  days.forEach((d) => { vitalsByDay[format(d, 'MM/dd')] = { sum_s: 0, sum_d: 0, n: 0 } })
+  allVitals.forEach((v) => {
+    const key = format(new Date(v.logged_at), 'MM/dd')
+    if (vitalsByDay[key]) {
+      vitalsByDay[key].sum_s += v.systolic_bp
+      vitalsByDay[key].sum_d += v.diastolic_bp
+      vitalsByDay[key].n    += 1
+    }
+  })
+  const vitalsTrend: VitalsTrendPoint[] = days.map((d) => {
+    const key = format(d, 'MM/dd')
+    const { sum_s, sum_d, n } = vitalsByDay[key]
+    return {
+      day:          key,
+      avgSystolic:  n > 0 ? Math.round((sum_s / n) * 10) / 10 : 0,
+      avgDiastolic: n > 0 ? Math.round((sum_d / n) * 10) / 10 : 0,
+    }
+  }).filter((p) => p.avgSystolic > 0)
+
+  // 2. Tier counts from patients
+  const tierCounts: TierCount[] = [
+    { name: 'Red',    value: demoPatients.filter((p) => p.risk_tier === 'red').length,    color: '#ef4444' },
+    { name: 'Yellow', value: demoPatients.filter((p) => p.risk_tier === 'yellow').length, color: '#f59e0b' },
+    { name: 'Green',  value: demoPatients.filter((p) => p.risk_tier === 'green').length,  color: '#22c55e' },
+  ]
+
+  // 3. EPDS histogram — no EPDS in seed, show empty bins
+  const epdsHistogram: EpdsHistogramBin[] = [
+    { range: '0–5',   count: 0, fill: '#22c55e' },
+    { range: '6–10',  count: 0, fill: '#84cc16' },
+    { range: '11–15', count: 0, fill: '#f59e0b' },
+    { range: '16–20', count: 0, fill: '#f97316' },
+    { range: '21–30', count: 0, fill: '#ef4444' },
+  ]
+
+  // 4. Alert volume — place alerts on their actual days
+  const alertByDay: Record<string, number> = {}
+  days.forEach((d) => { alertByDay[format(d, 'MM/dd')] = 0 })
+  demoAlerts.forEach((a) => {
+    const key = format(new Date(a.created_at), 'MM/dd')
+    if (key in alertByDay) alertByDay[key]++
+  })
+  const alertVolume: AlertVolumePoint[] = days.map((d) => ({
+    day:   format(d, 'MM/dd'),
+    count: alertByDay[format(d, 'MM/dd')] ?? 0,
+  }))
+
+  // 5. Top risk patients
+  const tierRank: Record<string, number> = { red: 0, yellow: 1, green: 2 }
+  const alertCountPerPatient: Record<string, number> = {}
+  demoAlerts.forEach((a) => {
+    alertCountPerPatient[a.patient_id] = (alertCountPerPatient[a.patient_id] ?? 0) + 1
+  })
+  const latestTierPerPatient: Record<string, string> = {}
+  allTriage.forEach((t) => {
+    if (!latestTierPerPatient[t.patient_id]) latestTierPerPatient[t.patient_id] = t.triage_tier
+  })
+  const topRisk: TopRiskPatient[] = demoPatients
+    .map((p) => ({
+      id:             p.id,
+      name:           p.name,
+      tier:           latestTierPerPatient[p.id] ?? p.risk_tier ?? 'green',
+      latestEpds:     null,
+      weeksGestation: p.weeks_gestation,
+      alertCount:     alertCountPerPatient[p.id] ?? 0,
+    }))
+    .sort((a, b) => (tierRank[a.tier] ?? 2) - (tierRank[b.tier] ?? 2))
+    .slice(0, 5)
+
+  return { vitalsTrend, tierCounts, epdsHistogram, alertVolume, topRisk }
+}
 
 // ── Data fetching ──────────────────────────────────────────────────────────
 async function getAnalyticsData() {
@@ -41,6 +132,12 @@ async function getAnalyticsData() {
   const epdsRaw    = epdsRes.data    ?? []
   const alertsRaw  = alertsRes.data  ?? []
   const patients   = patientsRes.data ?? []
+
+  // ── Demo fallback — if Supabase has no data, derive from seed ──────────
+  const isEmpty = vitalsRaw.length === 0 && triageRaw.length === 0 && patients.length === 0
+  if (isEmpty) {
+    return buildDemoAnalytics()
+  }
 
   // ── 1. Vitals trend — daily average systolic/diastolic ─────────────────
   const days = eachDayOfInterval({ start: subDays(now, 13), end: now })

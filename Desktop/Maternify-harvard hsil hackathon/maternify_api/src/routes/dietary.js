@@ -1,9 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const { verifyFirebaseToken: verifyToken } = require('../middleware/auth')
+const { verifyFirebaseToken } = require('../middleware/auth')
 const { getDietary } = require('../controllers/dietaryController')
 
 // POST /api/dietary — get personalised dietary advice
-router.post('/', verifyToken, getDietary)
+router.post('/', verifyFirebaseToken, getDietary)
 
 module.exports = router
