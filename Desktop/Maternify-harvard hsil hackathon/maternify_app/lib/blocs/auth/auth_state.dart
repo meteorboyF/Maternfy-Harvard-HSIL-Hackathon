@@ -11,10 +11,10 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthAuthenticated extends AuthState {
-  final User user;
+  final DemoSession user;
   const AuthAuthenticated({required this.user});
   @override
-  List<Object?> get props => [user.uid];
+  List<Object?> get props => [user.id, user.role];
 }
 
 class AuthUnauthenticated extends AuthState {}

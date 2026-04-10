@@ -1,146 +1,296 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../blocs/vitals/vitals_bloc.dart';
-import '../../models/vitals_log.dart';
 
-class VitalsScreen extends StatelessWidget {
+import '../../demo/demo_repository.dart';
+import '../../models/vitals_log.dart';
+import '../../utils/l10n.dart';
+
+class VitalsScreen extends StatefulWidget {
   final String patientId;
+
   const VitalsScreen({super.key, required this.patientId});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => VitalsBloc()..add(VitalsLoadRequested(patientId: patientId)),
-      child: _VitalsView(patientId: patientId),
-    );
-  }
+  State<VitalsScreen> createState() => _VitalsScreenState();
 }
 
-class _VitalsView extends StatefulWidget {
-  final String patientId;
-  const _VitalsView({required this.patientId});
+class _VitalsScreenState extends State<VitalsScreen> {
+  final DemoRepository _repository = DemoRepository.instance;
+  final _formKey = GlobalKey<FormState>();
+  final _systolicController = TextEditingController();
+  final _diastolicController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _glucoseController = TextEditingController();
+  final _kickController = TextEditingController();
+  bool _isSaving = false;
 
   @override
-  State<_VitalsView> createState() => _VitalsViewState();
-}
-
-class _VitalsViewState extends State<_VitalsView> {
-  final _formKey = GlobalKey<FormState>();
-  final _systolicCtrl = TextEditingController();
-  final _diastolicCtrl = TextEditingController();
-  final _weightCtrl = TextEditingController();
-  final _glucoseCtrl = TextEditingController();
-  final _kickCtrl = TextEditingController();
-  bool _submitting = false;
+  void initState() {
+    super.initState();
+    _clearForm();
+  }
 
   @override
   void dispose() {
-    _systolicCtrl.dispose();
-    _diastolicCtrl.dispose();
-    _weightCtrl.dispose();
-    _glucoseCtrl.dispose();
-    _kickCtrl.dispose();
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _weightController.dispose();
+    _glucoseController.dispose();
+    _kickController.dispose();
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
+  void _clearForm() {
+    _systolicController.clear();
+    _diastolicController.clear();
+    _weightController.clear();
+    _glucoseController.clear();
+    _kickController.clear();
+  }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _submitting = true);
+    setState(() => _isSaving = true);
 
     final log = VitalsLog(
       id: const Uuid().v4(),
       patientId: widget.patientId,
-      systolicBp: int.parse(_systolicCtrl.text),
-      diastolicBp: int.parse(_diastolicCtrl.text),
-      weightKg: double.parse(_weightCtrl.text),
-      bloodGlucose: double.parse(_glucoseCtrl.text),
-      kickCount: int.parse(_kickCtrl.text),
+      systolicBp: int.parse(_systolicController.text),
+      diastolicBp: int.parse(_diastolicController.text),
+      weightKg: double.parse(_weightController.text),
+      bloodGlucose: double.parse(_glucoseController.text),
+      kickCount: int.parse(_kickController.text),
       loggedAt: DateTime.now(),
     );
 
-    context.read<VitalsBloc>().add(VitalsLogSubmitted(vitals: log));
-    _systolicCtrl.clear();
-    _diastolicCtrl.clear();
-    _weightCtrl.clear();
-    _glucoseCtrl.clear();
-    _kickCtrl.clear();
-    setState(() => _submitting = false);
+    await _repository.submitVitals(log);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    final en = _repository.isEnglish;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(L.t(en, 'রিডিং সেভ হয়েছে।', 'Reading saved.')),
+      ),
+    );
+    _clearForm();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ভাইটালস লগ'),
-        backgroundColor: const Color(0xFF993556),
-        foregroundColor: Colors.white,
-      ),
-      body: BlocBuilder<VitalsBloc, VitalsState>(
-        builder: (context, state) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // BP Trend Chart
-                if (state is VitalsLoaded && state.logs.isNotEmpty) ...[
-                  _SectionTitle('রক্তচাপের ট্রেন্ড (শেষ ১৪ দিন)'),
-                  const SizedBox(height: 8),
-                  _BpChart(logs: state.logs),
-                  const SizedBox(height: 24),
-                ],
-
-                // Log Form
-                _SectionTitle('আজকের ভাইটালস লিখুন'),
-                const SizedBox(height: 12),
-                Form(
-                  key: _formKey,
-                  child: Column(
+      body: AnimatedBuilder(
+        animation: _repository,
+        builder: (context, _) {
+          final en = _repository.isEnglish;
+          final logs = _repository.vitalsLogs;
+          final latest = _repository.latestVitals;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B2E50), Color(0xFFB44C71)],
+                  ),
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L.t(en, 'আজকের স্বাস্থ্য রিডিং', "Today's Health Readings"),
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      L.t(en,
+                        'প্রতিদিন রিডিং লগ করুন যাতে আপনার চিকিৎসক সঠিক সময়ে পরামর্শ দিতে পারেন।',
+                        'Log your readings daily so your care team can advise you at the right time.',
+                      ),
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _TopMetric(
+                            label: L.t(en, 'সর্বশেষ BP', 'Latest BP'),
+                            value: '${latest.systolicBp}/${latest.diastolicBp}'),
+                        const SizedBox(width: 10),
+                        _TopMetric(
+                            label: L.t(en, 'গ্লুকোজ', 'Glucose'),
+                            value: latest.bloodGlucose.toStringAsFixed(1)),
+                        const SizedBox(width: 10),
+                        _TopMetric(
+                            label: L.t(en, 'কিক', 'Kick'),
+                            value: '${latest.kickCount}'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (_repository.lastVitalsUpdateAt != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF4EE),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
                     children: [
-                      Row(children: [
-                        Expanded(child: _VitalsField(ctrl: _systolicCtrl, label: 'সিস্টোলিক BP', hint: '120', unit: 'mmHg', min: 60, max: 200)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _VitalsField(ctrl: _diastolicCtrl, label: 'ডায়াস্টোলিক BP', hint: '80', unit: 'mmHg', min: 40, max: 130)),
-                      ]),
-                      const SizedBox(height: 12),
-                      Row(children: [
-                        Expanded(child: _VitalsField(ctrl: _weightCtrl, label: 'ওজন', hint: '60.5', unit: 'kg', isDecimal: true, min: 30, max: 120)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _VitalsField(ctrl: _glucoseCtrl, label: 'রক্তের সুগার', hint: '5.5', unit: 'mmol/L', isDecimal: true, min: 2, max: 20)),
-                      ]),
-                      const SizedBox(height: 12),
-                      _VitalsField(ctrl: _kickCtrl, label: 'কিক কাউন্ট (২ ঘণ্টায়)', hint: '10', unit: 'kicks', min: 0, max: 50),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _submitting ? null : () => _submit(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF993556),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      const Icon(Icons.check_circle_outline,
+                          color: Color(0xFF197A5B)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          L.t(en,
+                            '${DateFormat('h:mm a').format(_repository.lastVitalsUpdateAt!)}-এ রিডিং সেভ হয়েছে। আপনার ড্যাশবোর্ড আপডেট হয়েছে।',
+                            'Reading saved at ${DateFormat('h:mm a').format(_repository.lastVitalsUpdateAt!)}. Your dashboard has been updated.',
                           ),
-                          child: _submitting
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text('সেভ করুন', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: GoogleFonts.nunito(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Recent readings
-                if (state is VitalsLoaded && state.logs.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  _SectionTitle('সাম্প্রতিক রিডিং'),
-                  const SizedBox(height: 8),
-                  ...state.logs.reversed.take(5).map((log) => _VitalsCard(log: log)),
-                ],
-              ],
-            ),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(L.t(en, 'রক্তচাপের ধারা', 'Blood Pressure Trend'),
+                          style: GoogleFonts.nunito(
+                              fontSize: 16, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 12),
+                      SizedBox(height: 220, child: _BpChart(logs: logs)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(L.t(en, 'কিক কাউন্ট ও ওজন', 'Kick Count & Weight'),
+                          style: GoogleFonts.nunito(
+                              fontSize: 16, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                          height: 180, child: _KickWeightChart(logs: logs)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          L.t(en, 'নতুন রিডিং লগ করুন', 'Log New Reading'),
+                          style: GoogleFonts.nunito(
+                              fontSize: 16, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _VitalsField(
+                                controller: _systolicController,
+                                label: L.t(en, 'সিস্টোলিক', 'Systolic'),
+                                suffix: 'mmHg',
+                                isEnglish: en,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _VitalsField(
+                                controller: _diastolicController,
+                                label: L.t(en, 'ডায়াস্টোলিক', 'Diastolic'),
+                                suffix: 'mmHg',
+                                isEnglish: en,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _VitalsField(
+                                controller: _weightController,
+                                label: L.t(en, 'ওজন', 'Weight'),
+                                suffix: 'kg',
+                                isEnglish: en,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _VitalsField(
+                                controller: _glucoseController,
+                                label: L.t(en, 'গ্লুকোজ', 'Glucose'),
+                                suffix: 'mmol/L',
+                                isEnglish: en,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _VitalsField(
+                          controller: _kickController,
+                          label: L.t(en, '২ ঘণ্টায় কিক', 'Kicks in 2h'),
+                          suffix: L.t(en, 'কিক', 'kicks'),
+                          isEnglish: en,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _isSaving ? null : _submit,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(L.t(en, 'রিডিং সেভ করুন', 'Save Reading')),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                L.t(en, 'সাম্প্রতিক রিডিং', 'Recent Readings'),
+                style: GoogleFonts.nunito(
+                    fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              ...logs.reversed.take(5).map((log) => _ReadingCard(log: log, en: en)),
+            ],
           );
         },
       ),
@@ -148,53 +298,73 @@ class _VitalsViewState extends State<_VitalsView> {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
+class _TopMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TopMetric({
+    required this.label,
+    required this.value,
+  });
 
   @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-      );
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: GoogleFonts.nunito(color: Colors.white70, fontSize: 11)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: GoogleFonts.nunito(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _VitalsField extends StatelessWidget {
-  final TextEditingController ctrl;
-  final String label, hint, unit;
-  final bool isDecimal;
-  final int min, max;
+  final TextEditingController controller;
+  final String label;
+  final String suffix;
+  final bool isEnglish;
 
   const _VitalsField({
-    required this.ctrl,
+    required this.controller,
     required this.label,
-    required this.hint,
-    required this.unit,
-    this.isDecimal = false,
-    required this.min,
-    required this.max,
+    required this.suffix,
+    this.isEnglish = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: ctrl,
-      keyboardType: isDecimal ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
-        hintText: hint,
-        suffixText: unit,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF993556), width: 2),
-        ),
+        suffixText: suffix,
       ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'প্রয়োজন';
-        final n = num.tryParse(v);
-        if (n == null) return 'সংখ্যা লিখুন';
-        if (n < min || n > max) return '$min–$max';
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return L.t(isEnglish, 'প্রয়োজনীয়', 'Required');
+        }
+        if (num.tryParse(value) == null) {
+          return L.t(isEnglish, 'সঠিক সংখ্যা দিন', 'Enter a valid number');
+        }
         return null;
       },
     );
@@ -203,73 +373,177 @@ class _VitalsField extends StatelessWidget {
 
 class _BpChart extends StatelessWidget {
   final List<VitalsLog> logs;
+
   const _BpChart({required this.logs});
 
   @override
   Widget build(BuildContext context) {
-    final systolicSpots = logs.asMap().entries
-        .map((e) => FlSpot(e.key.toDouble(), e.value.systolicBp.toDouble()))
-        .toList();
-    final diastolicSpots = logs.asMap().entries
-        .map((e) => FlSpot(e.key.toDouble(), e.value.diastolicBp.toDouble()))
-        .toList();
+    final systolic = logs.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.systolicBp.toDouble());
+    }).toList();
+    final diastolic = logs.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.diastolicBp.toDouble());
+    }).toList();
 
-    return SizedBox(
-      height: 180,
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: true),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: systolicSpots,
-              isCurved: true,
-              color: const Color(0xFF993556),
-              barWidth: 2.5,
-              dotData: const FlDotData(show: false),
+    return LineChart(
+      LineChartData(
+        minY: 70,
+        maxY: 165,
+        gridData: FlGridData(show: true, horizontalInterval: 10),
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              getTitlesWidget: (value, meta) => Text(
+                value.toInt().toString(),
+                style: GoogleFonts.nunito(fontSize: 11),
+              ),
             ),
-            LineChartBarData(
-              spots: diastolicSpots,
-              isCurved: true,
-              color: const Color(0xFF9C27B0),
-              barWidth: 2.5,
-              dotData: const FlDotData(show: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 3,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= logs.length)
+                  return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    DateFormat('d MMM').format(logs[index].loggedAt),
+                    style: GoogleFonts.nunito(fontSize: 10),
+                  ),
+                );
+              },
             ),
-          ],
-          // Red danger lines
-          extraLinesData: ExtraLinesData(horizontalLines: [
-            HorizontalLine(y: 140, color: Colors.red.withOpacity(0.4), strokeWidth: 1, dashArray: [5, 5]),
-            HorizontalLine(y: 90, color: Colors.orange.withOpacity(0.4), strokeWidth: 1, dashArray: [5, 5]),
-          ]),
+          ),
         ),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+                y: 140,
+                color: const Color(0xFFD1423B).withValues(alpha: 0.4),
+                dashArray: [5, 5]),
+            HorizontalLine(
+                y: 90,
+                color: const Color(0xFFB17616).withValues(alpha: 0.4),
+                dashArray: [5, 5]),
+          ],
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: systolic,
+            isCurved: true,
+            color: const Color(0xFF983755),
+            barWidth: 3,
+            dotData: const FlDotData(show: false),
+          ),
+          LineChartBarData(
+            spots: diastolic,
+            isCurved: true,
+            color: const Color(0xFF5D53B7),
+            barWidth: 3,
+            dotData: const FlDotData(show: false),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _VitalsCard extends StatelessWidget {
-  final VitalsLog log;
-  const _VitalsCard({required this.log});
+class _KickWeightChart extends StatelessWidget {
+  final List<VitalsLog> logs;
+
+  const _KickWeightChart({required this.logs});
 
   @override
   Widget build(BuildContext context) {
-    final bpColor = log.isBpElevated ? Colors.red.shade700 : Colors.green.shade700;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${log.systolicBp}/${log.diastolicBp} mmHg',
-                style: TextStyle(fontWeight: FontWeight.bold, color: bpColor, fontSize: 16),
+    final kicks = logs.asMap().entries.map((entry) {
+      return BarChartGroupData(
+        x: entry.key,
+        barRods: [
+          BarChartRodData(
+            toY: entry.value.kickCount.toDouble(),
+            color: const Color(0xFF0F6E56),
+            width: 10,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ],
+      );
+    }).toList();
+
+    return BarChart(
+      BarChartData(
+        maxY: 16,
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(show: true, horizontalInterval: 2),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              getTitlesWidget: (value, meta) => Text(
+                value.toInt().toString(),
+                style: GoogleFonts.nunito(fontSize: 10),
               ),
             ),
-            Text('${log.weightKg}kg · ${log.bloodGlucose}mmol/L · ${log.kickCount} kicks',
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
+          ),
+          bottomTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        barGroups: kicks,
+      ),
+    );
+  }
+}
+
+class _ReadingCard extends StatelessWidget {
+  final VitalsLog log;
+  final bool en;
+
+  const _ReadingCard({required this.log, this.en = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final elevated = log.systolicBp >= 140 || log.diastolicBp >= 90;
+    final color = elevated ? const Color(0xFFD1423B) : const Color(0xFF197A5B);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.12),
+          foregroundColor: color,
+          child: Icon(elevated
+              ? Icons.warning_amber_rounded
+              : Icons.check_circle_outline),
+        ),
+        title: Text(
+          '${log.systolicBp}/${log.diastolicBp} mmHg',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.w900, color: color),
+        ),
+        subtitle: Text(
+          L.t(en,
+            'ওজন ${log.weightKg.toStringAsFixed(1)} কেজি • গ্লুকোজ ${log.bloodGlucose.toStringAsFixed(1)} • কিক ${log.kickCount}',
+            'Weight ${log.weightKg.toStringAsFixed(1)} kg • Glucose ${log.bloodGlucose.toStringAsFixed(1)} • Kick ${log.kickCount}',
+          ),
+          style: GoogleFonts.nunito(height: 1.35),
+        ),
+        trailing: Text(
+          DateFormat('d MMM\nh:mm a').format(log.loggedAt),
+          textAlign: TextAlign.right,
+          style:
+              GoogleFonts.nunito(fontSize: 11, color: const Color(0xFF756871)),
         ),
       ),
     );

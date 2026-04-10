@@ -1,56 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../blocs/triage/triage_bloc.dart';
-import '../../models/triage_event.dart';
 
-class TriageScreen extends StatelessWidget {
+import '../../demo/demo_repository.dart';
+import '../../models/triage_event.dart';
+import '../../utils/l10n.dart';
+
+class TriageScreen extends StatefulWidget {
   final String patientId;
+
   const TriageScreen({super.key, required this.patientId});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => TriageBloc(),
-      child: _TriageView(patientId: patientId),
-    );
-  }
+  State<TriageScreen> createState() => _TriageScreenState();
 }
 
-class _TriageView extends StatefulWidget {
-  final String patientId;
-  const _TriageView({required this.patientId});
+class _TriageScreenState extends State<TriageScreen> {
+  final DemoRepository _repository = DemoRepository.instance;
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isSubmitting = false;
+  String _language = 'bn';
 
-  @override
-  State<_TriageView> createState() => _TriageViewState();
-}
+  static const List<String> _starterChipsBn = [
+    'মাথা ঘুরছে আর চোখে ঝাপসা দেখছি',
+    'আজকে হাত পা একটু ফুলে গেছে',
+    'শিশুর নড়াচড়া কম লাগছে',
+  ];
 
-class _TriageViewState extends State<_TriageView> {
-  final _textCtrl = TextEditingController();
-  final _scrollCtrl = ScrollController();
-  String _selectedLang = 'bn';
+  static const List<String> _starterChipsEn = [
+    'I have dizziness and blurred vision',
+    'My hands and feet are swollen today',
+    'I feel reduced fetal movement',
+  ];
 
   @override
   void dispose() {
-    _textCtrl.dispose();
-    _scrollCtrl.dispose();
+    _textController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _send(BuildContext context) {
-    final text = _textCtrl.text.trim();
-    if (text.isEmpty) return;
-    context.read<TriageBloc>().add(TriageMessageSent(
-      patientId: widget.patientId,
-      text: text,
-      lang: _selectedLang,
-    ));
-    _textCtrl.clear();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+  Future<void> _submitText(String raw) async {
+    final text = raw.trim();
+    if (text.isEmpty || _isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    _textController.clear();
+
+    try {
+      await _repository.submitTriage(
+        patientId: widget.patientId,
+        text: text,
+        lang: _language,
+      );
+      _jumpToBottom();
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _jumpToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 120,
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -59,216 +74,260 @@ class _TriageViewState extends State<_TriageView> {
 
   @override
   Widget build(BuildContext context) {
+    final repository = _repository;
+    final en = repository.isEnglish;
+    final latest = repository.latestVitals;
+    final chips = en ? _starterChipsEn : _starterChipsBn;
     return Scaffold(
       appBar: AppBar(
-        title: Text('AI ট্রায়াজ', style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
+        title: Text(L.t(en, 'লক্ষণ বিশ্লেষণ', 'Symptom Analysis')),
         actions: [
-          // Language toggle
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: DropdownButton<String>(
-              value: _selectedLang,
-              dropdownColor: const Color(0xFF993556),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              underline: const SizedBox(),
-              icon: const Icon(Icons.language, color: Colors.white),
-              items: const [
-                DropdownMenuItem(value: 'bn', child: Text('বাংলা', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
-              ],
-              onChanged: (v) => setState(() => _selectedLang = v ?? 'bn'),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _language,
+                borderRadius: BorderRadius.circular(16),
+                dropdownColor: const Color(0xFF993556),
+                iconEnabledColor: Colors.white,
+                style: GoogleFonts.nunito(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'bn', child: Text('Bangla')),
+                  DropdownMenuItem(value: 'en', child: Text('English')),
+                ],
+                onChanged: (value) => setState(() => _language = value ?? 'bn'),
+              ),
             ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Chat history
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6EEF1),
+              border: Border(bottom: BorderSide(color: Color(0xFFEADADF))),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  L.t(en, 'সাম্প্রতিক স্বাস্থ্য তথ্য', 'Recent Health Context'),
+                  style: GoogleFonts.nunito(
+                      fontSize: 13, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  L.t(en,
+                    'সর্বশেষ BP ${latest.systolicBp}/${latest.diastolicBp} • কিক ${latest.kickCount} • ঝুঁকি: ${repository.riskLabelBangla}',
+                    'Latest BP ${latest.systolicBp}/${latest.diastolicBp} • Kick ${latest.kickCount} • Risk: ${repository.riskLabel}',
+                  ),
+                  style: GoogleFonts.nunito(color: const Color(0xFF665A62)),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: chips
+                      .map(
+                        (chip) => ActionChip(
+                          label: Text(chip),
+                          onPressed: () => _submitText(chip),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
           Expanded(
-            child: BlocBuilder<TriageBloc, TriageState>(
-              builder: (context, state) {
-                if (state is TriageInitial) {
-                  return _WelcomePrompt(lang: _selectedLang);
-                }
-                if (state is! TriageConversation) return const SizedBox();
-
+            child: AnimatedBuilder(
+              animation: repository,
+              builder: (context, _) {
+                final messages = repository.chatMessages;
                 return ListView.builder(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: state.messages.length + (state.isLoading ? 1 : 0),
-                  itemBuilder: (ctx, i) {
-                    if (i == state.messages.length) return const _TypingIndicator();
-                    return _ChatBubble(message: state.messages[i]);
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length + (_isSubmitting ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == messages.length) {
+                      return const _TypingBubble();
+                    }
+                    final message = messages[index];
+                    return _ChatBubble(message: message);
                   },
                 );
               },
             ),
           ),
-
-          // Input bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, -2))],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textCtrl,
-                    maxLines: 3,
-                    minLines: 1,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _send(context),
-                    decoration: InputDecoration(
-                      hintText: _selectedLang == 'bn'
-                          ? 'আপনার লক্ষণ লিখুন...'
-                          : 'Describe your symptoms...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFF993556)),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: _submitText,
+                      decoration: InputDecoration(
+                        hintText: _language == 'bn'
+                            ? 'লক্ষণ লিখুন... যেমন: মাথা ঘুরছে'
+                            : 'Describe symptoms...',
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFF993556), width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                BlocBuilder<TriageBloc, TriageState>(
-                  builder: (ctx, state) {
-                    final loading = state is TriageConversation && state.isLoading;
-                    return FloatingActionButton.small(
-                      onPressed: loading ? null : () => _send(ctx),
-                      backgroundColor: const Color(0xFF993556),
-                      child: loading
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.send, color: Colors.white),
-                    );
-                  },
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  FloatingActionButton.small(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _submitText(_textController.text),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.send_rounded),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _WelcomePrompt extends StatelessWidget {
-  final String lang;
-  const _WelcomePrompt({required this.lang});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.chat_bubble_outline, size: 64, color: Color(0xFF993556)),
-            const SizedBox(height: 16),
-            Text(
-              lang == 'bn'
-                  ? 'আপনার স্বাস্থ্য সম্পর্কে জিজ্ঞেস করুন\nআমি সাহায্য করব'
-                  : 'Ask about your health\nI\'m here to help',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
 
 class _ChatBubble extends StatelessWidget {
-  final TriageMessage message;
+  final DemoChatMessage message;
+
   const _ChatBubble({required this.message});
 
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+        margin: const EdgeInsets.only(bottom: 10),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.82),
         child: Column(
-          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isUser ? const Color(0xFF993556) : Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
-                ),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))],
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Text(
                 message.text,
                 style: GoogleFonts.nunito(
-                  color: isUser ? Colors.white : Colors.black87,
-                  fontSize: 15,
+                  fontSize: 14.5,
+                  height: 1.45,
+                  color: isUser ? Colors.white : const Color(0xFF322730),
                 ),
               ),
             ),
-            // Triage result card (colored, for AI responses)
-            if (!isUser && message.triageTier != null)
-              _TriageResultCard(tier: message.triageTier!, escalation: message.escalationRequired),
+            if (!isUser && message.tier != null) ...[
+              const SizedBox(height: 6),
+              _SeverityCard(
+                tier: message.tier!,
+                escalationRequired: message.escalationRequired,
+              ),
+            ],
           ],
         ),
       ),
     );
   }
-
 }
 
-class _TriageResultCard extends StatelessWidget {
+class _SeverityCard extends StatelessWidget {
   final TriageTier tier;
-  final bool escalation;
-  const _TriageResultCard({required this.tier, required this.escalation});
+  final bool escalationRequired;
+
+  const _SeverityCard({
+    required this.tier,
+    required this.escalationRequired,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final (color, icon, label) = switch (tier) {
-      TriageTier.green  => (const Color(0xFF1D9E75), '✓', 'চিন্তার কিছু নেই'),
-      TriageTier.yellow => (const Color(0xFFBA7517), '⚠', 'ডাক্তারের সাথে কথা বলুন'),
-      TriageTier.red    => (const Color(0xFFE24B4A), '🚨', 'এখনই হাসপাতালে যান'),
+    final color = switch (tier) {
+      TriageTier.green => const Color(0xFF197A5B),
+      TriageTier.yellow => const Color(0xFFB17616),
+      TriageTier.red => const Color(0xFFD1423B),
     };
+    final en = DemoRepository.instance.isEnglish;
+    final title = en
+        ? switch (tier) {
+            TriageTier.green => 'Green • Self-care at home',
+            TriageTier.yellow => 'Yellow • Contact clinic today',
+            TriageTier.red => 'Red • Seek urgent care now',
+          }
+        : switch (tier) {
+            TriageTier.green => 'সবুজ • ঘরেই যত্ন নিন',
+            TriageTier.yellow => 'হলুদ • ক্লিনিকে যোগাযোগ করুন',
+            TriageTier.red => 'লাল • এখনই জরুরি সহায়তা নিন',
+          };
 
     return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: color.withOpacity(tier == TriageTier.red ? 0.8 : 0.4),
-          width: tier == TriageTier.red ? 2 : 1,
-        ),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.nunito(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
+          Icon(
+            escalationRequired
+                ? Icons.emergency_rounded
+                : Icons.health_and_safety_outlined,
+            color: color,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.nunito(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
@@ -277,74 +336,67 @@ class _TriageResultCard extends StatelessWidget {
   }
 }
 
-class _TypingIndicator extends StatelessWidget {
-  const _TypingIndicator();
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
+        margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _Dot(delay: 0),
-            SizedBox(width: 4),
-            _Dot(delay: 200),
-            SizedBox(width: 4),
-            _Dot(delay: 400),
-          ],
+          children: List.generate(
+            3,
+            (index) => Padding(
+              padding: EdgeInsets.only(right: index == 2 ? 0 : 4),
+              child: const _PulseDot(),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _Dot extends StatefulWidget {
-  final int delay;
-  const _Dot({required this.delay});
+class _PulseDot extends StatefulWidget {
+  const _PulseDot();
 
   @override
-  State<_Dot> createState() => _DotState();
+  State<_PulseDot> createState() => _PulseDotState();
 }
 
-class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
-      ..repeat(reverse: true);
-    _anim = Tween(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _ctrl.forward();
-    });
-  }
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _anim,
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(color: Color(0xFF993556), shape: BoxShape.circle),
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.25, end: 1).animate(_controller),
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: const BoxDecoration(
+          color: Color(0xFF993556),
+          shape: BoxShape.circle,
         ),
-      );
+      ),
+    );
+  }
 }

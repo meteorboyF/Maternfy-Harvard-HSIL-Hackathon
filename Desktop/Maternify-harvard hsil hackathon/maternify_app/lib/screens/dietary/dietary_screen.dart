@@ -29,8 +29,7 @@ class DietaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => DietaryBloc(),
-      child: _DietaryView(
-          patientId: patientId, weeksGestation: weeksGestation),
+      child: _DietaryView(patientId: patientId, weeksGestation: weeksGestation),
     );
   }
 }
@@ -41,8 +40,7 @@ class _DietaryView extends StatefulWidget {
   final String patientId;
   final int weeksGestation;
 
-  const _DietaryView(
-      {required this.patientId, required this.weeksGestation});
+  const _DietaryView({required this.patientId, required this.weeksGestation});
 
   @override
   State<_DietaryView> createState() => _DietaryViewState();
@@ -324,8 +322,7 @@ class _MessagePair extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Container(
               margin: const EdgeInsets.only(bottom: 8, left: 48),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFF993556),
                 borderRadius: BorderRadius.circular(16),
@@ -368,8 +365,8 @@ class _ResponseCard extends StatelessWidget {
                 const Text('🤖', style: TextStyle(fontSize: 18)),
                 const SizedBox(width: 8),
                 const Text('Maternify পরামর্শ',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const Spacer(),
                 Text(
                   _timeLabel(msg.timestamp),
@@ -431,8 +428,7 @@ class _ResponseCard extends StatelessWidget {
                 runSpacing: 4,
                 children: msg.recommendedFoods
                     .map((f) => Chip(
-                          label:
-                              Text(f, style: const TextStyle(fontSize: 12)),
+                          label: Text(f, style: const TextStyle(fontSize: 12)),
                           backgroundColor: const Color(0xFFE8F5E9),
                           side: const BorderSide(color: Color(0xFF81C784)),
                           padding: EdgeInsets.zero,
@@ -456,8 +452,7 @@ class _ResponseCard extends StatelessWidget {
                 runSpacing: 4,
                 children: msg.foodsToAvoid
                     .map((f) => Chip(
-                          label:
-                              Text(f, style: const TextStyle(fontSize: 12)),
+                          label: Text(f, style: const TextStyle(fontSize: 12)),
                           backgroundColor: const Color(0xFFFFEBEE),
                           side: const BorderSide(color: Color(0xFFEF9A9A)),
                           padding: EdgeInsets.zero,
@@ -495,7 +490,7 @@ class _InputBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, -2)),
         ],
@@ -525,8 +520,7 @@ class _InputBar extends StatelessWidget {
             builder: (context, state) {
               final loading = state is DietaryLoading;
               return FloatingActionButton.small(
-                onPressed:
-                    loading ? null : () => onSubmit(controller.text),
+                onPressed: loading ? null : () => onSubmit(controller.text),
                 backgroundColor: const Color(0xFF993556),
                 elevation: 0,
                 child: loading

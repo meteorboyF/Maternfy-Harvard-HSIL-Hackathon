@@ -1,7 +1,7 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/firebase_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../demo/demo_repository.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -14,13 +14,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignOutRequested>(_onSignOut);
   }
 
-  void _onAuthStarted(AuthStarted event, Emitter<AuthState> emit) {
-    final user = FirebaseService.auth.currentUser;
-    if (user != null) {
-      emit(AuthAuthenticated(user: user));
-    } else {
+  Future<void> _onAuthStarted(
+    AuthStarted event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final session = await DemoRepository.instance.restoreSession();
+    if (session == null) {
       emit(AuthUnauthenticated());
+      return;
     }
+    emit(AuthAuthenticated(user: session));
   }
 
   Future<void> _onGoogleSignIn(
@@ -28,18 +32,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    try {
-      final provider = GoogleAuthProvider();
-      final credential =
-          await FirebaseService.auth.signInWithProvider(provider);
-      if (credential.user != null) {
-        emit(AuthAuthenticated(user: credential.user!));
-      } else {
-        emit(AuthUnauthenticated());
-      }
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    emit(const AuthError(
+      message:
+          'ইমেইল এবং পাসওয়ার্ড দিয়ে সাইন ইন করুন।',
+    ));
   }
 
   Future<void> _onEmailSignIn(
@@ -48,26 +45,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final credential = await FirebaseService.auth.signInWithEmailAndPassword(
+      final session = await DemoRepository.instance.signIn(
         email: event.email,
         password: event.password,
+        selectedRole: event.role,
       );
-      if (credential.user != null) {
-        emit(AuthAuthenticated(user: credential.user!));
-      } else {
-        emit(AuthUnauthenticated());
-      }
-    } on FirebaseAuthException catch (e) {
-      final msg = switch (e.code) {
-        'user-not-found'  => 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই',
-        'wrong-password'  => 'পাসওয়ার্ড ভুল হয়েছে',
-        'invalid-email'   => 'ইমেইল ঠিকানাটি সঠিক নয়',
-        'user-disabled'   => 'অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে',
-        _                 => e.message ?? 'লগইন ব্যর্থ হয়েছে',
-      };
-      emit(AuthError(message: msg));
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthAuthenticated(user: session));
+    } catch (error) {
+      emit(
+          AuthError(message: error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -75,7 +61,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await FirebaseService.auth.signOut();
+    await DemoRepository.instance.signOut();
     emit(AuthUnauthenticated());
   }
 }

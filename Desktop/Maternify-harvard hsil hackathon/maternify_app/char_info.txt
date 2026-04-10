@@ -1,0 +1,2 @@
+Char after RED triage: '।' hex=0x964 name=DEVANAGARI DANDA
+Context: 'RED triage। আপনার সর্বশেষ BP $'

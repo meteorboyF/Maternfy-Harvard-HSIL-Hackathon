@@ -1,0 +1,217 @@
+{
+  "provider": {
+    "id": "provider-fatema",
+    "name": "Dr. Fatema Rahman",
+    "queue_label": "Dhaka High-Risk Queue"
+  },
+  "accounts": {
+    "mother": {
+      "id": "mother-account",
+      "name": "Nusrat Jahan",
+      "email": "mother.nusrat@maternify.app",
+      "role": "mother",
+      "patient_id": "patient-nusrat"
+    },
+    "doctor": {
+      "id": "doctor-account",
+      "name": "Dr. Fatema Rahman",
+      "email": "doctor.fatema@maternify.app",
+      "role": "doctor"
+    }
+  },
+  "chat_seed": [
+    {
+      "id": "seed-assistant",
+      "text": "আপনার সাম্প্রতিক vitals আমি দেখছি। উপসর্গ বাংলা বা English-এ লিখুন, আমি urgency level দেখাব।",
+      "is_user": false,
+      "timestamp": "2026-04-10T09:00:00.000Z"
+    }
+  ],
+  "patients": [
+    {
+      "id": "patient-nusrat",
+      "name": "Nusrat Jahan",
+      "age": 26,
+      "phone": "+880 1712-345678",
+      "gravida": 1,
+      "parity": 0,
+      "weeks_gestation": 22,
+      "blood_type": "B+",
+      "provider_id": "provider-fatema",
+      "created_at": "2025-12-11T09:00:00.000Z",
+      "risk_tier": "red",
+      "latest_systolic": 145,
+      "latest_diastolic": 95,
+      "summary": "High priority. Rising BP trend, reduced kick count, and today’s Bangla symptom report indicate urgent evaluation.",
+      "days_since_log": 0
+    },
+    {
+      "id": "patient-rima",
+      "name": "Rima Akter",
+      "age": 29,
+      "phone": "+880 1750-224466",
+      "gravida": 2,
+      "parity": 1,
+      "weeks_gestation": 31,
+      "blood_type": "O+",
+      "provider_id": "provider-fatema",
+      "created_at": "2025-11-15T09:00:00.000Z",
+      "risk_tier": "yellow",
+      "latest_systolic": 136,
+      "latest_diastolic": 89,
+      "summary": "YELLOW watchlist. Mild swelling and borderline BP; follow-up recommended today.",
+      "days_since_log": 1
+    },
+    {
+      "id": "patient-sadia",
+      "name": "Sadia Islam",
+      "age": 24,
+      "phone": "+880 1798-998877",
+      "gravida": 1,
+      "parity": 0,
+      "weeks_gestation": 18,
+      "blood_type": "A+",
+      "provider_id": "provider-fatema",
+      "created_at": "2026-01-22T09:00:00.000Z",
+      "risk_tier": "green",
+      "latest_systolic": 118,
+      "latest_diastolic": 76,
+      "summary": "GREEN stable. Regular logging and reassuring vitals this week.",
+      "days_since_log": 0
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alert-red-triage",
+      "patient_id": "patient-nusrat",
+      "provider_id": "provider-fatema",
+      "alert_type": "red_triage",
+      "message": "Nusrat reported dizziness and blurred vision in Bangla. Latest BP 145/95 requires urgent review.",
+      "read": false,
+      "created_at": "2026-04-10T10:12:00.000Z"
+    },
+    {
+      "id": "alert-sos",
+      "patient_id": "patient-nusrat",
+      "provider_id": "provider-fatema",
+      "alert_type": "sos_active",
+      "message": "SOS packet received for Nusrat with latest vitals, clinic update, and emergency contact notification.",
+      "read": false,
+      "created_at": "2026-04-10T10:15:00.000Z"
+    },
+    {
+      "id": "alert-yellow-watch",
+      "patient_id": "patient-rima",
+      "provider_id": "provider-fatema",
+      "alert_type": "kick_count_low",
+      "message": "Rima remains on the yellow watchlist after swelling report and borderline BP.",
+      "read": false,
+      "created_at": "2026-04-10T08:45:00.000Z"
+    }
+  ],
+  "patient_records": {
+    "patient-nusrat": {
+      "ai_summary": "Over the last 7 days, Nusrat’s blood pressure has risen from 128/84 to 145/95, fetal kick count has dropped, and today she reported dizziness with blurred vision in Bangla. This pattern is concerning for hypertensive complication and warrants immediate clinical contact.",
+      "risk_factors": [
+        { "feature": "systolic_bp", "value": 145, "impact": 0.92 },
+        { "feature": "diastolic_bp", "value": 95, "impact": 0.74 },
+        { "feature": "kick_count", "value": 8, "impact": 0.48 }
+      ],
+      "vitals": [
+        { "id": "nusrat-vitals-1", "patient_id": "patient-nusrat", "systolic_bp": 118, "diastolic_bp": 76, "weight_kg": 58.4, "blood_glucose": 5.2, "kick_count": 13, "logged_at": "2026-03-28T08:30:00.000Z" },
+        { "id": "nusrat-vitals-2", "patient_id": "patient-nusrat", "systolic_bp": 119, "diastolic_bp": 76, "weight_kg": 58.6, "blood_glucose": 5.4, "kick_count": 13, "logged_at": "2026-03-29T08:30:00.000Z" },
+        { "id": "nusrat-vitals-3", "patient_id": "patient-nusrat", "systolic_bp": 120, "diastolic_bp": 77, "weight_kg": 58.9, "blood_glucose": 5.6, "kick_count": 13, "logged_at": "2026-03-30T08:30:00.000Z" },
+        { "id": "nusrat-vitals-4", "patient_id": "patient-nusrat", "systolic_bp": 121, "diastolic_bp": 77, "weight_kg": 59.1, "blood_glucose": 5.2, "kick_count": 12, "logged_at": "2026-03-31T08:30:00.000Z" },
+        { "id": "nusrat-vitals-5", "patient_id": "patient-nusrat", "systolic_bp": 122, "diastolic_bp": 78, "weight_kg": 59.4, "blood_glucose": 5.4, "kick_count": 12, "logged_at": "2026-04-01T08:30:00.000Z" },
+        { "id": "nusrat-vitals-6", "patient_id": "patient-nusrat", "systolic_bp": 123, "diastolic_bp": 78, "weight_kg": 59.6, "blood_glucose": 5.6, "kick_count": 12, "logged_at": "2026-04-02T08:30:00.000Z" },
+        { "id": "nusrat-vitals-7", "patient_id": "patient-nusrat", "systolic_bp": 124, "diastolic_bp": 79, "weight_kg": 59.9, "blood_glucose": 5.2, "kick_count": 11, "logged_at": "2026-04-03T08:30:00.000Z" },
+        { "id": "nusrat-vitals-8", "patient_id": "patient-nusrat", "systolic_bp": 125, "diastolic_bp": 79, "weight_kg": 60.1, "blood_glucose": 5.4, "kick_count": 11, "logged_at": "2026-04-04T08:30:00.000Z" },
+        { "id": "nusrat-vitals-9", "patient_id": "patient-nusrat", "systolic_bp": 126, "diastolic_bp": 80, "weight_kg": 60.4, "blood_glucose": 5.6, "kick_count": 11, "logged_at": "2026-04-05T08:30:00.000Z" },
+        { "id": "nusrat-vitals-10", "patient_id": "patient-nusrat", "systolic_bp": 127, "diastolic_bp": 80, "weight_kg": 60.6, "blood_glucose": 5.2, "kick_count": 10, "logged_at": "2026-04-06T08:30:00.000Z" },
+        { "id": "nusrat-vitals-11", "patient_id": "patient-nusrat", "systolic_bp": 128, "diastolic_bp": 81, "weight_kg": 60.9, "blood_glucose": 5.4, "kick_count": 10, "logged_at": "2026-04-07T08:30:00.000Z" },
+        { "id": "nusrat-vitals-12", "patient_id": "patient-nusrat", "systolic_bp": 129, "diastolic_bp": 81, "weight_kg": 61.1, "blood_glucose": 5.6, "kick_count": 10, "logged_at": "2026-04-08T08:30:00.000Z" },
+        { "id": "nusrat-vitals-13", "patient_id": "patient-nusrat", "systolic_bp": 139, "diastolic_bp": 86, "weight_kg": 61.4, "blood_glucose": 5.2, "kick_count": 9, "logged_at": "2026-04-09T08:30:00.000Z" },
+        { "id": "nusrat-vitals-14", "patient_id": "patient-nusrat", "systolic_bp": 145, "diastolic_bp": 95, "weight_kg": 61.6, "blood_glucose": 5.4, "kick_count": 8, "logged_at": "2026-04-10T08:30:00.000Z" }
+      ],
+      "triage_history": [
+        {
+          "id": "triage-nusrat-red",
+          "patient_id": "patient-nusrat",
+          "input_text": "মাথা ঘুরছে আর চোখে ঝাপসা দেখছি",
+          "input_lang": "bn",
+          "triage_tier": "red",
+          "advice_bangla": "এটি জরুরি RED triage। এখনই নিকটস্থ হাসপাতালে যান এবং ক্লিনিক টিমকে সতর্ক করুন।",
+          "advice_english": "Emergency triage. Go to the nearest hospital now and alert the clinic team.",
+          "escalation_required": true,
+          "suggested_action": "Immediate clinical review and urgent care support",
+          "created_at": "2026-04-10T10:12:00.000Z"
+        },
+        {
+          "id": "triage-nusrat-yellow",
+          "patient_id": "patient-nusrat",
+          "input_text": "Baby movement কম লাগছে",
+          "input_lang": "bn",
+          "triage_tier": "yellow",
+          "advice_bangla": "২৪ ঘণ্টার মধ্যে ক্লিনিকে কথা বলুন এবং kick count পুনরায় মাপুন।",
+          "advice_english": "Contact the clinic within 24 hours and repeat kick count.",
+          "escalation_required": false,
+          "suggested_action": "Repeat monitoring and clinician review",
+          "created_at": "2026-04-09T17:20:00.000Z"
+        }
+      ]
+    },
+    "patient-rima": {
+      "ai_summary": "Rima has a borderline blood pressure pattern with reported swelling and one missed nutrition check-in. She is stable now but should be called today for review.",
+      "risk_factors": [
+        { "feature": "systolic_bp", "value": 136, "impact": 0.53 },
+        { "feature": "diastolic_bp", "value": 89, "impact": 0.43 },
+        { "feature": "weeks_gestation", "value": 31, "impact": 0.18 }
+      ],
+      "vitals": [
+        { "id": "rima-vitals-1", "patient_id": "patient-rima", "systolic_bp": 128, "diastolic_bp": 82, "weight_kg": 66.0, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-01T08:15:00.000Z" },
+        { "id": "rima-vitals-2", "patient_id": "patient-rima", "systolic_bp": 128, "diastolic_bp": 82, "weight_kg": 66.2, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-02T08:15:00.000Z" },
+        { "id": "rima-vitals-3", "patient_id": "patient-rima", "systolic_bp": 129, "diastolic_bp": 82, "weight_kg": 66.4, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-03T08:15:00.000Z" },
+        { "id": "rima-vitals-4", "patient_id": "patient-rima", "systolic_bp": 129, "diastolic_bp": 83, "weight_kg": 66.6, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-04T08:15:00.000Z" },
+        { "id": "rima-vitals-5", "patient_id": "patient-rima", "systolic_bp": 130, "diastolic_bp": 83, "weight_kg": 66.8, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-05T08:15:00.000Z" },
+        { "id": "rima-vitals-6", "patient_id": "patient-rima", "systolic_bp": 130, "diastolic_bp": 83, "weight_kg": 67.0, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-06T08:15:00.000Z" },
+        { "id": "rima-vitals-7", "patient_id": "patient-rima", "systolic_bp": 131, "diastolic_bp": 84, "weight_kg": 67.2, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-07T08:15:00.000Z" },
+        { "id": "rima-vitals-8", "patient_id": "patient-rima", "systolic_bp": 131, "diastolic_bp": 84, "weight_kg": 67.4, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-08T08:15:00.000Z" },
+        { "id": "rima-vitals-9", "patient_id": "patient-rima", "systolic_bp": 132, "diastolic_bp": 84, "weight_kg": 67.6, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-09T08:15:00.000Z" },
+        { "id": "rima-vitals-10", "patient_id": "patient-rima", "systolic_bp": 136, "diastolic_bp": 89, "weight_kg": 67.8, "blood_glucose": 5.7, "kick_count": 11, "logged_at": "2026-04-10T08:15:00.000Z" }
+      ],
+      "triage_history": [
+        {
+          "id": "triage-rima-yellow",
+          "patient_id": "patient-rima",
+          "input_text": "পা একটু ফুলে আছে",
+          "input_lang": "bn",
+          "triage_tier": "yellow",
+          "advice_bangla": "আজকের মধ্যে BP আবার মাপুন এবং ক্লিনিকে কথা বলুন।",
+          "advice_english": "Repeat BP today and contact the clinic.",
+          "escalation_required": false,
+          "suggested_action": "Same-day review",
+          "created_at": "2026-04-10T08:45:00.000Z"
+        }
+      ]
+    },
+    "patient-sadia": {
+      "ai_summary": "Sadia remains stable with normal blood pressure, reassuring kick counts, and no recent urgent symptoms. Routine follow-up is sufficient.",
+      "risk_factors": [
+        { "feature": "systolic_bp", "value": 118, "impact": -0.38 },
+        { "feature": "diastolic_bp", "value": 76, "impact": -0.31 },
+        { "feature": "kick_count", "value": 12, "impact": -0.24 }
+      ],
+      "vitals": [
+        { "id": "sadia-vitals-1", "patient_id": "patient-sadia", "systolic_bp": 116, "diastolic_bp": 74, "weight_kg": 54.8, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-03T07:50:00.000Z" },
+        { "id": "sadia-vitals-2", "patient_id": "patient-sadia", "systolic_bp": 117, "diastolic_bp": 75, "weight_kg": 55.0, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-04T07:50:00.000Z" },
+        { "id": "sadia-vitals-3", "patient_id": "patient-sadia", "systolic_bp": 118, "diastolic_bp": 74, "weight_kg": 55.2, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-05T07:50:00.000Z" },
+        { "id": "sadia-vitals-4", "patient_id": "patient-sadia", "systolic_bp": 116, "diastolic_bp": 75, "weight_kg": 55.4, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-06T07:50:00.000Z" },
+        { "id": "sadia-vitals-5", "patient_id": "patient-sadia", "systolic_bp": 117, "diastolic_bp": 74, "weight_kg": 55.6, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-07T07:50:00.000Z" },
+        { "id": "sadia-vitals-6", "patient_id": "patient-sadia", "systolic_bp": 118, "diastolic_bp": 75, "weight_kg": 55.8, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-08T07:50:00.000Z" },
+        { "id": "sadia-vitals-7", "patient_id": "patient-sadia", "systolic_bp": 116, "diastolic_bp": 74, "weight_kg": 56.0, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-09T07:50:00.000Z" },
+        { "id": "sadia-vitals-8", "patient_id": "patient-sadia", "systolic_bp": 118, "diastolic_bp": 76, "weight_kg": 56.2, "blood_glucose": 5.1, "kick_count": 12, "logged_at": "2026-04-10T07:50:00.000Z" }
+      ],
+      "triage_history": []
+    }
+  }
+}

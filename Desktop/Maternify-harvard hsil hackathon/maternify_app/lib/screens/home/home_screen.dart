@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import '../../blocs/auth/auth_bloc.dart';
-import '../../models/patient.dart';
-import '../../services/supabase_service.dart';
-import '../vitals/vitals_screen.dart';
-import '../triage/triage_screen.dart';
-import '../sos/sos_screen.dart';
-import '../calendar/calendar_screen.dart';
+import '../../demo/demo_repository.dart';
+import '../../utils/l10n.dart';
 import '../dietary/dietary_screen.dart';
 import '../journal/journal_screen.dart';
+import '../sos/sos_screen.dart';
+import '../specialist/specialist_list_screen.dart';
+import '../triage/triage_screen.dart';
+import '../vitals/vitals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,374 +22,884 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  Patient? _patient;
-  bool _loading = true;
-  String? _error;
+  final DemoRepository _repository = DemoRepository.instance;
 
   @override
-  void initState() {
-    super.initState();
-    _loadPatient();
-  }
-
-  Future<void> _loadPatient() async {
-    try {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is! AuthAuthenticated) return;
-      final uid = authState.user.uid;
-
-      final data = await SupabaseService.client
-          .from('patients')
-          .select()
-          .eq('id', uid)
-          .maybeSingle();
-
-      if (mounted) {
-        setState(() {
-          _patient = data != null ? Patient.fromJson(data) : null;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
-      }
+  Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) {
+      return const Scaffold(body: SizedBox.shrink());
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Maternify', style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: 22)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () =>
-                context.read<AuthBloc>().add(AuthSignOutRequested()),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _ErrorView(error: _error!, onRetry: _loadPatient)
-              : _patient == null
-                  ? const _NoProfileView()
-                  : _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _selectedIndex = 4),
-        tooltip: 'জরুরি SOS',
-        child: const Icon(Icons.sos, size: 28),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'হোম'),
-          NavigationDestination(icon: Icon(Icons.monitor_heart_outlined), selectedIcon: Icon(Icons.monitor_heart), label: 'ভাইটালস'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'ট্রায়াজ'),
-          NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'ক্যালেন্ডার'),
-          NavigationDestination(icon: Icon(Icons.emergency_outlined), selectedIcon: Icon(Icons.emergency), label: 'SOS'),
-        ],
-      ),
-    );
-  }
+    if (authState.user.role == DemoRole.doctor) {
+      return _DoctorPreviewScreen(session: authState.user);
+    }
 
-  Widget _buildBody() {
-    final patient = _patient!;
-    return switch (_selectedIndex) {
-      0 => _HomeTab(
-          patient: patient,
-          onNavigate: (i) => setState(() => _selectedIndex = i),
-        ),
-      1 => VitalsScreen(patientId: patient.id),
-      2 => TriageScreen(patientId: patient.id),
-      3 => CalendarScreen(
-          patientId: patient.id,
-          weeksGestation: patient.weeksGestation,
-        ),
-      4 => SosScreen(patient: patient),
-      _ => const SizedBox.shrink(),
-    };
-  }
-}
+    return AnimatedBuilder(
+      animation: _repository,
+      builder: (context, _) {
+        final en = _repository.isEnglish;
+        final patientId = authState.user.patientId!;
 
-// ─── Home tab dashboard ───────────────────────────────────────────────────────
-
-class _HomeTab extends StatelessWidget {
-  final Patient patient;
-  final ValueChanged<int> onNavigate;
-  const _HomeTab({required this.patient, required this.onNavigate});
-
-  @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final weeksLeft = 40 - patient.weeksGestation;
-    final dueDate = today.add(Duration(days: weeksLeft * 7));
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Greeting card
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF993556), Color(0xFFBF4070)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF993556).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
-              ],
+        final body = switch (_selectedIndex) {
+          0 => _MotherDashboard(
+              session: authState.user,
+              onNavigate: (index) => setState(() => _selectedIndex = index),
             ),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'আস-সালামু আলাইকুম, ${patient.name.split(' ').first} 🌸',
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    // Risk tier badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFBA7517),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '⚠ YELLOW',
-                        style: GoogleFonts.nunito(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat('EEEE, d MMMM yyyy', 'en').format(today),
-                  style: GoogleFonts.nunito(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _StatChip(label: 'গর্ভাবস্থা', value: '${patient.weeksGestation} সপ্তাহ'),
-                    const SizedBox(width: 8),
-                    _StatChip(label: 'বাকি', value: '$weeksLeft সপ্তাহ'),
-                    const SizedBox(width: 8),
-                    _StatChip(label: 'রক্তের গ্রুপ', value: patient.bloodType),
-                  ],
-                ),
-              ],
+          1 => VitalsScreen(patientId: patientId),
+          2 => TriageScreen(patientId: patientId),
+          3 => DietaryScreen(
+              patientId: patientId,
+              weeksGestation: _repository.motherPatient.weeksGestation,
             ),
-          ),
+          4 => JournalScreen(patientId: patientId),
+          5 => SosScreen(patient: _repository.motherPatient),
+          _ => const SizedBox.shrink(),
+        };
 
-          const SizedBox(height: 16),
-
-          // Due date card
-          Card(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFFCE4EC),
-                child: Text('🍼', style: TextStyle(fontSize: 20)),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Maternify'),
+            actions: [
+              IconButton(
+                tooltip: en ? 'বাংলা' : 'English',
+                onPressed: _repository.toggleLanguage,
+                icon: Icon(en
+                    ? Icons.translate_rounded
+                    : Icons.language_rounded),
               ),
-              title: const Text('প্রত্যাশিত প্রসব তারিখ',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(DateFormat('d MMMM yyyy', 'en').format(dueDate)),
-              trailing: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFCE4EC),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'আর ${dueDate.difference(today).inDays} দিন',
-                  style: const TextStyle(
-                      color: Color(0xFF993556),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Quick-action grid
-          Text('দ্রুত কার্যক্রম',
-              style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87)),
-          const SizedBox(height: 10),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 2.5,
-            children: [
-              _QuickAction(
-                icon: Icons.monitor_heart,
-                label: 'ভাইটালস লগ',
-                color: const Color(0xFF993556),
-                onTap: () => onNavigate(1),
-              ),
-              _QuickAction(
-                icon: Icons.chat_bubble,
-                label: 'AI ট্রায়াজ',
-                color: const Color(0xFF0F6E56),
-                onTap: () => onNavigate(2),
-              ),
-              _QuickAction(
-                icon: Icons.calendar_month,
-                label: 'প্রেগন্যান্সি টাইমলাইন',
-                color: const Color(0xFF534AB7),
-                onTap: () => onNavigate(3),
-              ),
-              _QuickAction(
-                icon: Icons.restaurant_menu,
-                label: 'খাদ্য পরামর্শ',
-                color: const Color(0xFF0F6E56),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DietaryScreen(
-                      patientId: patient.id,
-                      weeksGestation: patient.weeksGestation,
-                    ),
-                  ),
-                ),
-              ),
-              _QuickAction(
-                icon: Icons.menu_book,
-                label: 'মেজাজ জার্নাল',
-                color: const Color(0xFF534AB7),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => JournalScreen(patientId: patient.id),
-                  ),
-                ),
-              ),
-              _QuickAction(
-                icon: Icons.emergency,
-                label: 'জরুরি SOS',
-                color: const Color(0xFFE24B4A),
-                onTap: () => onNavigate(4),
+              IconButton(
+                onPressed: () =>
+                    context.read<AuthBloc>().add(AuthSignOutRequested()),
+                icon: const Icon(Icons.logout_rounded),
               ),
             ],
           ),
+          body: body,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => setState(() => _selectedIndex = 5),
+            backgroundColor: const Color(0xFFE24B4A),
+            icon: const Icon(Icons.sos_rounded),
+            label: const Text('SOS'),
+          ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) =>
+                setState(() => _selectedIndex = index),
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded),
+                label: L.t(en, 'হোম', 'Home'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.monitor_heart_outlined),
+                selectedIcon: const Icon(Icons.monitor_heart_rounded),
+                label: L.t(en, 'রিডিং', 'Vitals'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                selectedIcon: const Icon(Icons.chat_bubble_rounded),
+                label: L.t(en, 'বিশ্লেষণ', 'Triage'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.restaurant_menu_outlined),
+                selectedIcon: const Icon(Icons.restaurant_menu_rounded),
+                label: L.t(en, 'পুষ্টি', 'Diet'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.book_outlined),
+                selectedIcon: const Icon(Icons.book_rounded),
+                label: L.t(en, 'ডায়েরি', 'Journal'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.warning_amber_outlined),
+                selectedIcon: const Icon(Icons.warning_rounded),
+                label: L.t(en, 'জরুরি', 'Urgent'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
-          const SizedBox(height: 16),
+class _MotherDashboard extends StatelessWidget {
+  final DemoSession session;
+  final ValueChanged<int> onNavigate;
 
-          // Patient info card
-          Card(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
+  const _MotherDashboard({
+    required this.session,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final repository = DemoRepository.instance;
+    return AnimatedBuilder(
+      animation: repository,
+      builder: (context, _) {
+        final en = repository.isEnglish;
+        final patient = repository.motherPatient;
+        final latest = repository.latestVitals;
+        final dueDate = DateTime.now().add(
+          Duration(days: (40 - patient.weeksGestation) * 7),
+        );
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          children: [
+            _RiskBanner(repository: repository),
+            const SizedBox(height: 14),
+            // Greeting card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8B2E50), Color(0xFFB44C71)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('রোগীর তথ্য',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold)),
-                  const Divider(),
-                  _InfoRow('গ্রাভিডা', '${patient.gravida}'),
-                  _InfoRow('প্যারিটি', '${patient.parity}'),
-                  _InfoRow('বয়স', '${patient.age} বছর'),
-                  _InfoRow('ফোন', patient.phone),
+                  Text(
+                    L.t(en, 'স্বাগতম, ${session.name.split(' ').first}',
+                        'Welcome, ${session.name.split(' ').first}'),
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    L.t(en, '${patient.weeksGestation} সপ্তাহ গর্ভকাল',
+                        '${patient.weeksGestation} weeks pregnant'),
+                    style: GoogleFonts.nunito(
+                      color: Colors.white.withValues(alpha: 0.88),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _HeroStat(
+                          label: L.t(en, 'সর্বশেষ BP', 'Latest BP'),
+                          value:
+                              '${latest.systolicBp}/${latest.diastolicBp}'),
+                      const SizedBox(width: 10),
+                      _HeroStat(
+                          label: L.t(en, 'কিক কাউন্ট', 'Kick Count'),
+                          value: '${latest.kickCount}/2h'),
+                      const SizedBox(width: 10),
+                      _HeroStat(
+                          label: L.t(en, 'প্রসবের তারিখ', 'Due Date'),
+                          value: DateFormat('d MMM').format(dueDate)),
+                    ],
+                  ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              L.t(en, 'দ্রুত কাজ', 'Quick Actions'),
+              style: GoogleFonts.nunito(
+                  fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.35,
+              children: [
+                _ActionTile(
+                  title: L.t(en, 'আজকের রিডিং লগ করুন',
+                      'Log Today\'s Reading'),
+                  subtitle: L.t(en, 'চার্ট আপডেট করুন', 'Update your chart'),
+                  icon: Icons.monitor_heart_rounded,
+                  color: const Color(0xFF983755),
+                  onTap: () => onNavigate(1),
+                ),
+                _ActionTile(
+                  title: L.t(en, 'লক্ষণ বিশ্লেষণ করুন', 'Analyze Symptoms'),
+                  subtitle:
+                      L.t(en, 'বাংলায় লক্ষণ জানান', 'Describe how you feel'),
+                  icon: Icons.chat_rounded,
+                  color: const Color(0xFF0F6E56),
+                  onTap: () => onNavigate(2),
+                ),
+                _ActionTile(
+                  title: L.t(en, 'জরুরি SOS', 'Emergency SOS'),
+                  subtitle: L.t(en, 'জরুরি সাহায্যের জন্য চাপুন',
+                      'Tap for urgent help'),
+                  icon: Icons.sos_rounded,
+                  color: const Color(0xFFE24B4A),
+                  onTap: () => onNavigate(5),
+                ),
+                _ActionTile(
+                  title: L.t(en, 'ক্লিনিক আপডেট দেখুন', 'Clinic Updates'),
+                  subtitle: L.t(en, 'আপনার চিকিৎসকের মতামত',
+                      'Your care team\'s notes'),
+                  icon: Icons.local_hospital_outlined,
+                  color: const Color(0xFF5D53B7),
+                  onTap: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      showDragHandle: true,
+                      builder: (_) =>
+                          _ProviderPeekSheet(repository: repository),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Care Network tile — full width
+            _CareNetworkTile(en: en),
+            const SizedBox(height: 16),
+
+            // AI summary
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L.t(en, 'AI স্বাস্থ্য সারসংক্ষেপ', 'AI Health Summary'),
+                      style: GoogleFonts.nunito(
+                          fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      repository.aiSummaryBangla,
+                      style: GoogleFonts.nunito(fontSize: 14, height: 1.5),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _MetricPill(
+                          label: L.t(en, 'গ্লুকোজ', 'Glucose'),
+                          value:
+                              '${latest.bloodGlucose.toStringAsFixed(1)} mmol/L',
+                        ),
+                        const SizedBox(width: 8),
+                        _MetricPill(
+                          label: L.t(en, 'ওজন', 'Weight'),
+                          value: '${latest.weightKg.toStringAsFixed(1)} kg',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Care plan
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L.t(en, 'আজকের যত্ন পরিকল্পনা', 'Today\'s Care Plan'),
+                      style: GoogleFonts.nunito(
+                          fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 12),
+                    _CareRow(
+                      icon: Icons.check_circle_outline_rounded,
+                      title: L.t(en, 'দুপুরের পরে আবার BP মাপুন',
+                          'Measure BP again after noon'),
+                      subtitle: L.t(en, 'বিশ্রামের পরে রক্তচাপ লগ করুন।',
+                          'Log your blood pressure after resting.'),
+                    ),
+                    _CareRow(
+                      icon: Icons.medical_information_outlined,
+                      title: L.t(
+                          en,
+                          'মাথা ঘোরা বা চোখে ঝাপসা দেখলে সতর্ক থাকুন',
+                          'Watch for dizziness or blurred vision'),
+                      subtitle: L.t(en, 'লক্ষণ বাড়লে দ্রুত চিকিৎসা নিন।',
+                          'Seek care promptly if symptoms worsen.'),
+                    ),
+                    _CareRow(
+                      icon: Icons.notifications_active_outlined,
+                      title: repository.sosTriggered
+                          ? L.t(en, 'SOS পাঠানো হয়েছে', 'SOS Dispatched')
+                          : L.t(en, 'SOS প্রস্তুত রাখুন', 'Keep SOS ready'),
+                      subtitle: repository.sosTriggered
+                          ? L.t(
+                              en,
+                              'আপনার ক্লিনিক টিম ইতোমধ্যে আপনার জরুরি অনুরোধ পেয়েছে।',
+                              'Your clinic team has already received your emergency request.')
+                          : L.t(
+                              en,
+                              'একবার চাপলেই ক্লিনিক টিম সাথে সাথে জানতে পারবে।',
+                              'One tap alerts your clinic team immediately.'),
+                      isLast: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              L.t(en, 'সাম্প্রতিক সতর্কতা', 'Recent Alerts'),
+              style: GoogleFonts.nunito(
+                  fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            ...repository.alerts.take(3).map(
+                  (alert) => _AlertCard(alert: alert, en: en),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DoctorPreviewScreen extends StatelessWidget {
+  final DemoSession session;
+
+  const _DoctorPreviewScreen({required this.session});
+
+  @override
+  Widget build(BuildContext context) {
+    final repository = DemoRepository.instance;
+    return AnimatedBuilder(
+      animation: repository,
+      builder: (context, _) {
+        final en = repository.isEnglish;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(L.t(en, 'চিকিৎসক ভিউ', 'Doctor View')),
+            actions: [
+              IconButton(
+                tooltip: en ? 'বাংলা' : 'English',
+                onPressed: repository.toggleLanguage,
+                icon: const Icon(Icons.translate_rounded),
+              ),
+              IconButton(
+                onPressed: () =>
+                    context.read<AuthBloc>().add(AuthSignOutRequested()),
+                icon: const Icon(Icons.logout_rounded),
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Header card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1F2530),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dr. ${session.name.split(' ').last}',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      L.t(
+                        en,
+                        'Review recent alerts and prioritize urgent patients.',
+                        'সাম্প্রতিক সতর্কতা দেখুন এবং জরুরি রোগীদের অগ্রাধিকার দিন।',
+                      ),
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Incoming appointments
+              if (repository.appointments.isNotEmpty) ...[
+                Text(
+                  L.t(en, 'নতুন অ্যাপয়েন্টমেন্ট', 'Incoming Appointments'),
+                  style: GoogleFonts.nunito(
+                      fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                ...repository.appointments
+                    .take(3)
+                    .map((apt) => _AppointmentCard(
+                          appointment: apt,
+                          repository: repository,
+                          en: en,
+                        )),
+                const SizedBox(height: 16),
+              ],
+
+              Text(
+                L.t(en, 'সাম্প্রতিক সতর্কতা', 'Recent Alerts'),
+                style: GoogleFonts.nunito(
+                    fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              ...repository.alerts
+                  .take(2)
+                  .map((alert) => _AlertCard(alert: alert, en: en)),
+              const SizedBox(height: 16),
+              Text(
+                L.t(en, 'রোগীর অগ্রাধিকার তালিকা', 'Patient Priority List'),
+                style: GoogleFonts.nunito(
+                    fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              ...repository.providerPatients
+                  .map((patient) => _ProviderPatientCard(
+                        patient: patient,
+                        en: en,
+                      )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Care Network tile ─────────────────────────────────────────────────────────
+
+class _CareNetworkTile extends StatelessWidget {
+  final bool en;
+
+  const _CareNetworkTile({required this.en});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+            builder: (_) => const SpecialistListScreen()),
+      ),
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF5D53B7).withValues(alpha: 0.12),
+              const Color(0xFF8B2E50).withValues(alpha: 0.08),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+              color: const Color(0xFF5D53B7).withValues(alpha: 0.25)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5D53B7).withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.medical_services_rounded,
+                    color: Color(0xFF5D53B7)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L.t(en, 'বিশেষজ্ঞ খুঁজুন', 'Find a Specialist'),
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF322730),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      L.t(
+                        en,
+                        'OB/GYN, উচ্চ-ঝুঁকি বিশেষজ্ঞ ও পুষ্টিবিদ',
+                        'OB/GYN, high-risk specialists & nutritionists',
+                      ),
+                      style: GoogleFonts.nunito(
+                          fontSize: 12.5, color: const Color(0xFF675A63)),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFF5D53B7)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Appointment card (doctor view) ────────────────────────────────────────────
+
+class _AppointmentCard extends StatelessWidget {
+  final DemoAppointment appointment;
+  final DemoRepository repository;
+  final bool en;
+
+  const _AppointmentCard({
+    required this.appointment,
+    required this.repository,
+    required this.en,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = repository.latestVitals;
+    final riskColor = switch (repository.currentRiskLevel) {
+      DemoRiskLevel.green => const Color(0xFF197A5B),
+      DemoRiskLevel.yellow => const Color(0xFFB17616),
+      DemoRiskLevel.red => const Color(0xFFD1423B),
+    };
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFF5D53B7).withValues(alpha: 0.2)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5D53B7).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      L.t(en, 'নতুন অ্যাপয়েন্টমেন্ট', 'New Appointment'),
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        color: const Color(0xFF5D53B7),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (appointment.vitalsShared)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF197A5B).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.share_rounded,
+                              size: 12, color: Color(0xFF197A5B)),
+                          const SizedBox(width: 4),
+                          Text(
+                            L.t(en, 'ভাইটালস শেয়ার', 'Vitals Shared'),
+                            style: GoogleFonts.nunito(
+                              fontSize: 11,
+                              color: const Color(0xFF197A5B),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                repository.motherPatient.name,
+                style: GoogleFonts.nunito(
+                    fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                L.t(
+                  en,
+                  '${repository.motherPatient.weeksGestation} weeks pregnant • BP ${latest.systolicBp}/${latest.diastolicBp} • Kick count ${latest.kickCount}',
+                  '${repository.motherPatient.weeksGestation} সপ্তাহ • BP ${latest.systolicBp}/${latest.diastolicBp} • কিক কাউন্ট ${latest.kickCount}',
+                ),
+                style: GoogleFonts.nunito(color: const Color(0xFF655A62)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: riskColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${L.t(en, 'ঝুঁকি', 'Risk')}: ${repository.riskLabel}',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        color: riskColor,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${appointment.isOnline ? L.t(en, 'অনলাইন', 'Online') : L.t(en, 'সশরীরে', 'In-person')} • ${appointment.displaySlot(en)}',
+                      style: GoogleFonts.nunito(
+                          color: const Color(0xFF786B72), fontSize: 12.5),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                L.t(
+                  en,
+                  'Booked after a high-risk symptom event. Patient\'s latest readings are attached.',
+                  'উচ্চ-ঝুঁকির লক্ষণের পরে অ্যাপয়েন্টমেন্ট নেওয়া হয়েছে। রোগীর সর্বশেষ রিডিং সংযুক্ত।',
+                ),
+                style: GoogleFonts.nunito(
+                    height: 1.4,
+                    fontSize: 13,
+                    color: const Color(0xFF655A62)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Risk banner ───────────────────────────────────────────────────────────────
+
+class _RiskBanner extends StatelessWidget {
+  final DemoRepository repository;
+
+  const _RiskBanner({required this.repository});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (repository.currentRiskLevel) {
+      DemoRiskLevel.green => const Color(0xFF197A5B),
+      DemoRiskLevel.yellow => const Color(0xFFB17616),
+      DemoRiskLevel.red => const Color(0xFFD1423B),
+    };
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            repository.currentRiskLevel == DemoRiskLevel.red
+                ? Icons.warning_rounded
+                : Icons.analytics_outlined,
+            color: color,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${repository.riskLabelBangla} • ${repository.riskLabel}',
+                  style: GoogleFonts.nunito(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  repository.riskSummaryBangla,
+                  style: GoogleFonts.nunito(fontSize: 13.5, height: 1.45),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-
 }
 
-class _StatChip extends StatelessWidget {
+// ── Reusable sub-widgets ──────────────────────────────────────────────────────
+
+class _HeroStat extends StatelessWidget {
   final String label;
   final String value;
-  const _StatChip({required this.label, required this.value});
+
+  const _HeroStat({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white24,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(color: Colors.white70, fontSize: 10)),
-          Text(value,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
-        ],
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.nunito(color: Colors.white70, fontSize: 11),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: GoogleFonts.nunito(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _QuickAction extends StatelessWidget {
+class _ActionTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
   final IconData icon;
-  final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _QuickAction(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
+  const _ActionTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: GoogleFonts.nunito(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF322730),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(
+                  fontSize: 12.5,
+                  color: const Color(0xFF675A63),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MetricPill({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F1F3),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(label,
-                  style: GoogleFonts.nunito(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ),
+            Text(label,
+                style: GoogleFonts.nunito(
+                    fontSize: 11, color: const Color(0xFF675A63))),
+            const SizedBox(height: 3),
+            Text(value,
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
           ],
         ),
       ),
@@ -396,77 +907,210 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow(this.label, this.value);
+class _CareRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isLast;
+
+  const _CareRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.isLast = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-              width: 80,
-              child: Text(label,
-                  style: const TextStyle(
-                      color: Colors.black54, fontSize: 13))),
-          Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500, fontSize: 13)),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3ECEF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: const Color(0xFF993556)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: GoogleFonts.nunito(
+                        color: const Color(0xFF6C6068), height: 1.4)),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Error / no-profile states ────────────────────────────────────────────────
+class _AlertCard extends StatelessWidget {
+  final DemoAlert alert;
+  final bool en;
 
-class _ErrorView extends StatelessWidget {
-  final String error;
-  final VoidCallback onRetry;
-  const _ErrorView({required this.error, required this.onRetry});
+  const _AlertCard({required this.alert, required this.en});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text(error, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('পুনরায় চেষ্টা করুন')),
-          ],
+    final color = switch (alert.riskLevel) {
+      DemoRiskLevel.green => const Color(0xFF197A5B),
+      DemoRiskLevel.yellow => const Color(0xFFB17616),
+      DemoRiskLevel.red => const Color(0xFFD1423B),
+    };
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.12),
+          foregroundColor: color,
+          child: Icon(
+              alert.urgent ? Icons.notifications_active : Icons.info_outline),
+        ),
+        title: Text(alert.title,
+            style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child:
+              Text(alert.message, style: GoogleFonts.nunito(height: 1.35)),
+        ),
+        trailing: Text(
+          DateFormat('h:mm a').format(alert.createdAt),
+          style: GoogleFonts.nunito(
+              fontSize: 11, color: const Color(0xFF786B72)),
         ),
       ),
     );
   }
 }
 
-class _NoProfileView extends StatelessWidget {
-  const _NoProfileView();
+class _ProviderPeekSheet extends StatelessWidget {
+  final DemoRepository repository;
+
+  const _ProviderPeekSheet({required this.repository});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('🤱', style: TextStyle(fontSize: 64)),
-            SizedBox(height: 16),
-            Text(
-              'আপনার প্রোফাইল এখনো তৈরি হয়নি।\nঅনুগ্রহ করে আপনার ডাক্তারের সাথে যোগাযোগ করুন।',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+    final en = repository.isEnglish;
+    final nusrat = repository.providerPatients.first;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            L.t(en, 'ক্লিনিক টিমের আপডেট', 'Clinic Team Update'),
+            style: GoogleFonts.nunito(
+                fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            L.t(
+              en,
+              'Latest patient status from your care team.',
+              'আপনার চিকিৎসকের পাঠানো সর্বশেষ রোগীর অবস্থা।',
             ),
-          ],
+            style: GoogleFonts.nunito(color: const Color(0xFF675A63)),
+          ),
+          const SizedBox(height: 14),
+          _ProviderPatientCard(patient: nusrat, en: en),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProviderPatientCard extends StatelessWidget {
+  final DemoProviderPatient patient;
+  final bool en;
+
+  const _ProviderPatientCard({required this.patient, required this.en});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (patient.riskLevel) {
+      DemoRiskLevel.green => const Color(0xFF197A5B),
+      DemoRiskLevel.yellow => const Color(0xFFB17616),
+      DemoRiskLevel.red => const Color(0xFFD1423B),
+    };
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      patient.name,
+                      style: GoogleFonts.nunito(
+                          fontSize: 16, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      en
+                          ? switch (patient.riskLevel) {
+                              DemoRiskLevel.green => 'Stable',
+                              DemoRiskLevel.yellow => 'Watch',
+                              DemoRiskLevel.red => 'Urgent',
+                            }
+                          : switch (patient.riskLevel) {
+                              DemoRiskLevel.green => 'সবুজ',
+                              DemoRiskLevel.yellow => 'হলুদ',
+                              DemoRiskLevel.red => 'লাল',
+                            },
+                      style: GoogleFonts.nunito(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                L.t(
+                  en,
+                  '${patient.weeksGestation} weeks • BP ${patient.latestBp} • logged ${patient.daysSinceLog}d ago',
+                  '${patient.weeksGestation} সপ্তাহ • BP ${patient.latestBp} • ${patient.daysSinceLog} দিন আগে লগ',
+                ),
+                style:
+                    GoogleFonts.nunito(color: const Color(0xFF655A62)),
+              ),
+              const SizedBox(height: 8),
+              Text(patient.summary,
+                  style: GoogleFonts.nunito(height: 1.4)),
+            ],
+          ),
         ),
       ),
     );

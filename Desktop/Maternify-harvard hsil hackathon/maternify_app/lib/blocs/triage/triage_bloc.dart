@@ -13,13 +13,15 @@ class TriageBloc extends Bloc<TriageInputEvent, TriageState> {
     on<TriageMessageSent>(_onMessageSent);
   }
 
-  Future<void> _onMessageSent(TriageMessageSent event, Emitter<TriageState> emit) async {
+  Future<void> _onMessageSent(
+      TriageMessageSent event, Emitter<TriageState> emit) async {
     // Append user message immediately
     final current = state is TriageConversation
         ? (state as TriageConversation).messages
         : <TriageMessage>[];
 
-    final userMsg = TriageMessage(text: event.text, isUser: true, timestamp: DateTime.now());
+    final userMsg = TriageMessage(
+        text: event.text, isUser: true, timestamp: DateTime.now());
     emit(TriageConversation(messages: [...current, userMsg], isLoading: true));
 
     try {
@@ -37,7 +39,9 @@ class TriageBloc extends Bloc<TriageInputEvent, TriageState> {
 
       final triageEvent = TriageEvent.fromJson(response.data);
       final botMsg = TriageMessage(
-        text: event.lang == 'bn' ? triageEvent.adviceBangla : triageEvent.adviceEnglish,
+        text: event.lang == 'bn'
+            ? triageEvent.adviceBangla
+            : triageEvent.adviceEnglish,
         isUser: false,
         timestamp: DateTime.now(),
         triageTier: triageEvent.triageTier,
@@ -46,10 +50,16 @@ class TriageBloc extends Bloc<TriageInputEvent, TriageState> {
 
       final updated = [...(state as TriageConversation).messages, botMsg];
       emit(TriageConversation(messages: updated, isLoading: false));
-    } on DioException catch (e) {
+    } on DioException {
       final msgs = (state as TriageConversation).messages;
       emit(TriageConversation(
-        messages: [...msgs, TriageMessage(text: 'সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।', isUser: false, timestamp: DateTime.now())],
+        messages: [
+          ...msgs,
+          TriageMessage(
+              text: 'সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+              isUser: false,
+              timestamp: DateTime.now())
+        ],
         isLoading: false,
       ));
     }
