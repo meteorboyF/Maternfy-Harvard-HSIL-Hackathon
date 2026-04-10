@@ -83,12 +83,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           body: body,
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => setState(() => _selectedIndex = 5),
-            backgroundColor: const Color(0xFFE24B4A),
-            icon: const Icon(Icons.sos_rounded),
-            label: const Text('SOS'),
-          ),
+          floatingActionButton: _selectedIndex == 0
+              ? FloatingActionButton.extended(
+                  onPressed: () => setState(() => _selectedIndex = 5),
+                  backgroundColor: const Color(0xFFE24B4A),
+                  icon: const Icon(Icons.sos_rounded),
+                  label: const Text('SOS'),
+                )
+              : null,
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) =>
@@ -886,7 +888,7 @@ class _RiskBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${repository.riskLabelBangla} • ${repository.riskLabel}',
+                  repository.riskLabelBangla,
                   style: GoogleFonts.nunito(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
